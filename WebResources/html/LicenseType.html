@@ -1,0 +1,78 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>License Type Selector</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body class="p-4">
+  <div class="container">
+    <h4>Select License Type</h4>
+    <form id="checkboxForm">
+      <div id="checkboxContainer" class="mb-3">
+        <!-- Checkboxes will be inserted here -->
+      </div>
+    </form>
+
+    <div class="mt-3">
+      <label for="selectedOutput">Selected Values:</label>
+      <textarea id="selectedOutput" class="form-control" rows="4" readonly></textarea>
+    </div>
+  </div>
+
+  <script>
+    function renderLicenseCheckboxes() {
+      try {
+        const formContext = window.parent.Xrm.Page;
+        const attribute = formContext.getAttribute("new_licensetype");
+
+        if (!attribute) {
+          console.error("⚠️ Field 'new_licensetype' not found.");
+          return;
+        }
+
+        const selectedValues = attribute.getValue() || [];
+        const options = attribute.getOptions();
+
+        let html = '';
+        options.forEach((opt, index) => {
+          const isChecked = selectedValues.includes(opt.value) ? 'checked' : '';
+          if (index % 3 === 0) html += '<div class="row mb-2">';
+
+          html += `
+            <div class="col-md-4">
+              <div class="form-check">
+                <input class="form-check-input cb-auto" type="checkbox" id="cb${opt.value}" value="${opt.value}" ${isChecked}>
+                <label class="form-check-label" for="cb${opt.value}">${opt.text}</label>
+              </div>
+            </div>
+          `;
+
+          if (index % 3 === 2 || index === options.length - 1) html += '</div>';
+        });
+
+        $('#checkboxContainer').html(html);
+        updateSelectedValues(); // Initial load
+
+      } catch (err) {
+        console.error("Error rendering license types:", err);
+      }
+    }
+
+    function updateSelectedValues() {
+      const selected = [];
+      $('.cb-auto:checked').each(function () {
+        selected.push($(this).val());
+      });
+      $('#selectedOutput').val(selected.join('\n'));
+    }
+
+    $(document).on('change', '.cb-auto', updateSelectedValues);
+
+    window.onload = function () {
+      renderLicenseCheckboxes();
+    };
+  </script>
+</body>
+</html>
