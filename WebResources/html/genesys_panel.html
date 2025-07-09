@@ -1,0 +1,38 @@
+<html>
+<head>
+    <title>Genesys CRM Panel</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        #genesys-container {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body style="overflow-wrap: break-word;">
+    <div id="genesys-container"></div>
+
+    <script src="https://apps.mypurecloud.com/genesys-embeddable-framework/main.js"></script>
+    <script>
+    ININ.ui.init({
+      containerEl: document.getElementById('genesys-container'),
+      config: {
+        organizationId: 'your-org-id',
+        environment: 'mypurecloud.com', // Use your region (e.g., 'use1.pure.cloud')
+        deploymentId: 'your-deployment-id', // Optional: for chat integration
+        oauth: {
+          clientId: 'YOUR_CLIENT_ID',
+          redirectUri: window.location.href
+        }
+      }
+    });
+    </script>
+
+
+</body>
+</html>
