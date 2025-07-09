@@ -292,9 +292,13 @@
     <Content Include="Areas\HelpPage\Views\Help\DisplayTemplates\ApiGroup.cshtml" />
     <Content Include="Areas\HelpPage\Views\Help\Api.cshtml" />
     <None Include="Properties\PublishProfiles\api-crm-esnad - FTP.pubxml" />
+    <None Include="Properties\PublishProfiles\api-crm-esnad - FTP1.pubxml" />
     <None Include="Properties\PublishProfiles\api-crm-esnad - Web Deploy.pubxml" />
+    <None Include="Properties\PublishProfiles\api-crm-esnad - Web Deploy1.pubxml" />
     <None Include="Properties\PublishProfiles\dev-api - FTP.pubxml" />
+    <None Include="Properties\PublishProfiles\dev-api - FTP1.pubxml" />
     <None Include="Properties\PublishProfiles\dev-api - Web Deploy.pubxml" />
+    <None Include="Properties\PublishProfiles\dev-api - Web Deploy1.pubxml" />
     <None Include="Scripts\jquery-3.7.0.intellisense.js" />
     <Content Include="Scripts\jquery-3.7.0.js" />
     <Content Include="Scripts\jquery-3.7.0.min.js" />
