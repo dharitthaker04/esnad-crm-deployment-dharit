@@ -6,6 +6,7 @@
 Web.config
 Program.cs
 key1.pfx  
+MyKey.snk
 
 # User-specific files
 *.rsuser
@@ -420,3 +421,4 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+/Plugins/CustomerService_Esnad/CustomerService_Esnad/MyKey.snk
