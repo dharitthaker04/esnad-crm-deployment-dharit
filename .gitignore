@@ -4,6 +4,7 @@
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
 Web.config
+Program.cs
 
 # User-specific files
 *.rsuser
@@ -418,6 +419,3 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
-/Solutions/TicketSystemAPI/TicketSystemApi/Web.config
-/Solutions/TicketSystemAPI/TicketSystemApi/Web.Debug.config
-/Solutions/TicketSystemAPI/TicketSystemApi/Web.Release.config
