@@ -421,4 +421,3 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
-/Plugins/CustomerService_Esnad/CustomerService_Esnad/MyKey.snk
