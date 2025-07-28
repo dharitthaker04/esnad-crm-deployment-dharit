@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace CustomerService_Esnad
 {
-    public class SendCaseReplyNotification : IPlugin
+    public class SendNotificationtoCSTeamOnProcessingStage : IPlugin
     {
         public void Execute(IServiceProvider serviceProvider)
         {
@@ -84,19 +84,22 @@ namespace CustomerService_Esnad
                     ["partyid"] = new EntityReference("systemuser", crmAdmin.Id)
                 };
 
-                // Build email   
-                string orgUrl = GetOrgURL(service, tracing);
+                // Build email
+                string imageUrl = "http://d365.crm-esnad.com/"; // Use HTTPS if possible
+                string orgUrl = GetOrgURL1(service, tracing);
                 string caseUrl = $"{orgUrl}{caseId}";
                 string caseTitleHtml = $"<a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a>";
 
+                // ✅ Include the image using <img src="">
                 string emailBody = $@"
-<html>
-  <body>
-    <p><img src='http://d365.crm-esnad.com/' alt='CRM Logo' style='max-width: 200px;' /></p>
-    <p>📝 <strong>Customer has responded to the ticket:</strong> {caseTitleHtml}</p>
-    <p>يرجى مراجعة الرد واتخاذ الإجراءات اللازمة.</p>
-  </body>
-</html>";
+     <html>
+       <body>
+         <p><img src='{imageUrl}' alt='CRM Logo' style='max-width: 200px;' /></p>
+         <p>Ticket No. {caseTitleHtml}has been processed by the relevant department.</p>
+         <p> Please check the solution and close the ticket according to the Service Level Agreement.</p>
+         
+       </body>
+     </html>";
 
                 var email = new Entity("email")
                 {
@@ -140,7 +143,7 @@ namespace CustomerService_Esnad
             tracing.Trace("🏁 Plugin execution completed.");
         }
 
-        private string GetOrgURL(IOrganizationService service, ITracingService tracing)
+        private string GetOrgURL1(IOrganizationService service, ITracingService tracing)
         {
             var query = new QueryExpression("new_environmentvariable")
             {

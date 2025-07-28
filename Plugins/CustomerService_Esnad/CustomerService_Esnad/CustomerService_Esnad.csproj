@@ -150,6 +150,7 @@
     <Compile Include="ResolveIncidentRequest.cs" />
     <Compile Include="SendCaseReplyNotification.cs" />
     <Compile Include="SendEmailToCustomerServiceTeam.cs" />
+    <Compile Include="SendNotificationtoCSTeamOnProcessingStage.cs" />
     <Compile Include="SetBPFActiveStage.cs" />
     <Compile Include="SLALeval1.cs" />
     <Compile Include="SLALevel2.cs" />
