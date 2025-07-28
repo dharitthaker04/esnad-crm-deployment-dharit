@@ -2,14 +2,11 @@
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Sdk;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CustomerService_Esnad
 {
-    public class SendNotificationtoCSTeamOnProcessingStage : IPlugin
+    public class EmailtoCRMOfficerOnProcessingStage : IPlugin
     {
         public void Execute(IServiceProvider serviceProvider)
         {
@@ -22,6 +19,7 @@ namespace CustomerService_Esnad
 
             try
             {
+                // ✅ Validate input parameters
                 if (!context.InputParameters.Contains("CaseId") || !(context.InputParameters["CaseId"] is EntityReference caseRef))
                     throw new InvalidPluginExecutionException("Missing or invalid 'CaseId' input parameter.");
 
@@ -31,38 +29,60 @@ namespace CustomerService_Esnad
                 var caseId = caseRef.Id;
                 var teamId = teamRef.Id;
 
-                // Get case title
-                var caseEntity = service.Retrieve("incident", caseId, new ColumnSet("title"));
+                // ✅ Get case title and assigned specialized team
+                var caseEntity = service.Retrieve("incident", caseId, new ColumnSet("title", "new_assignedspecializedteam"));
                 string caseTitle = caseEntity.GetAttributeValue<string>("title") ?? "Unknown";
 
-                // Get all users in the team
-                var teamUsersQuery = new QueryExpression("teammembership")
+                // ✅ Get the assigned specialized team name
+                string assignedTeamName = "Not Assigned";
+                if (caseEntity.Contains("new_assignedspecializedteam"))
                 {
-                    ColumnSet = new ColumnSet("systemuserid"),
-                    Criteria = new FilterExpression
+                    var assignedTeamRef = caseEntity.GetAttributeValue<EntityReference>("new_assignedspecializedteam");
+                    if (assignedTeamRef != null)
                     {
-                        Conditions = {
-                            new ConditionExpression("teamid", ConditionOperator.Equal, teamId)
-                        }
+                        assignedTeamName = assignedTeamRef.Name; // Directly get the name from the lookup
                     }
-                };
+                }
 
-                var userIds = service.RetrieveMultiple(teamUsersQuery)
-                    .Entities.Select(e => e.GetAttributeValue<Guid>("systemuserid")).Distinct().ToList();
+                tracing.Trace($"Case Title: {caseTitle}, Assigned Specialized Team: {assignedTeamName}");
 
-                if (!userIds.Any())
+                // ✅ Fetch only users in the team with Position = CRM Officer
+                string fetchXml = $@"
+<fetch>
+   <entity name='systemuser'>
+     <attribute name='systemuserid'/>
+     <attribute name='internalemailaddress'/>
+     <filter>
+       <condition attribute='accessmode' operator='eq' value='0' /> <!-- Active user -->
+     </filter>
+     <link-entity name='teammembership' from='systemuserid' to='systemuserid' link-type='inner'>
+       <filter>
+         <condition attribute='teamid' operator='eq' value='{teamId}' />
+       </filter>
+     </link-entity>
+     <link-entity name='position' from='positionid' to='positionid' link-type='inner'>
+       <filter>
+         <condition attribute='name' operator='eq' value='CRM Officer' />
+       </filter>
+     </link-entity>
+   </entity>
+</fetch>";
+
+                var users = service.RetrieveMultiple(new FetchExpression(fetchXml)).Entities;
+
+                if (!users.Any())
                 {
-                    tracing.Trace("❌ No users found in the team.");
+                    tracing.Trace("❌ No users found in team with position CRM Officer.");
                     return;
                 }
 
-                // Build 'To' recipients
-                var toParties = userIds.Select(uid => new Entity("activityparty")
+                // ✅ Build 'To' recipients
+                var toParties = users.Select(u => new Entity("activityparty")
                 {
-                    ["partyid"] = new EntityReference("systemuser", uid)
+                    ["partyid"] = new EntityReference("systemuser", u.Id)
                 }).ToList();
 
-                // Get CRM Admin user
+                // ✅ Get CRM Admin user (Sender)
                 var crmAdmin = service.RetrieveMultiple(new QueryExpression("systemuser")
                 {
                     ColumnSet = new ColumnSet("systemuserid", "internalemailaddress"),
@@ -84,26 +104,26 @@ namespace CustomerService_Esnad
                     ["partyid"] = new EntityReference("systemuser", crmAdmin.Id)
                 };
 
-                // Build email
-                string imageUrl = "http://d365.crm-esnad.com/"; // Use HTTPS if possible
-                string orgUrl = GetOrgURL1(service, tracing);
+                // ✅ Build email body with Assigned Team Name
+                string orgUrl = GetOrgURL(service, tracing);
                 string caseUrl = $"{orgUrl}{caseId}";
+                string imageUrl = "https://d365.crm-esnad.com/WebResources/esnad_logo.png"; // Update with actual logo URL
+
                 string caseTitleHtml = $"<a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a>";
 
-                // ✅ Include the image using <img src="">
                 string emailBody = $@"
-     <html>
-       <body>
-         <p><img src='{imageUrl}' alt='CRM Logo' style='max-width: 200px;' /></p>
-         <p>Ticket No. {caseTitleHtml}has been processed by the relevant department.</p>
-         <p> Please check the solution and close the ticket according to the Service Level Agreement.</p>
-         
-       </body>
-     </html>";
+<html>
+  <body>
+    <p><img src='{imageUrl}' alt='CRM Logo' style='max-width: 200px;' /></p>
+    <p>The {assignedTeamName} has assigned Ticket No. {caseTitleHtml} to your department for further action. A comment has been added to the ticket with additional context.</p>
+    <p>Kindly review the ticket and proceed accordingly.</p>
+    <p>Please let us know if any further support is required.</p>
+  </body>
+</html>";
 
                 var email = new Entity("email")
                 {
-                    ["subject"] = $"Ticket Assign to your Team {caseTitle}",
+                    ["subject"] = $"Dear Customer service team {caseTitle}",
                     ["description"] = emailBody,
                     ["directioncode"] = true,
                     ["from"] = new EntityCollection(new[] { fromParty }),
@@ -113,8 +133,9 @@ namespace CustomerService_Esnad
                 };
 
                 Guid emailId = service.Create(email);
-                tracing.Trace("✅ Email created. ID: " + emailId);
+                tracing.Trace($"✅ Email created. ID: {emailId}");
 
+                // ✅ Send Email
                 var sendRequest = new SendEmailRequest
                 {
                     EmailId = emailId,
@@ -123,27 +144,26 @@ namespace CustomerService_Esnad
                 };
 
                 service.Execute(sendRequest);
-                tracing.Trace("✅ Email sent via SendEmailRequest.");
+                tracing.Trace("✅ Email sent successfully via SendEmailRequest.");
 
-                // Update case
+                // ✅ Update case with copy of GUID
                 var updateCase = new Entity("incident", caseId)
                 {
                     ["new_copycaseguid"] = caseId.ToString()
                 };
                 service.Update(updateCase);
                 tracing.Trace("✅ Case updated with new_copycaseguid.");
-
             }
             catch (Exception ex)
             {
                 tracing.Trace("❌ Exception: " + ex.ToString());
-                throw new InvalidPluginExecutionException("Error in SendCaseReplyNotificationPlugin.", ex);
+                throw new InvalidPluginExecutionException("Error in SendEmailNotificationToCRMOfficer Plugin.", ex);
             }
 
             tracing.Trace("🏁 Plugin execution completed.");
         }
 
-        private string GetOrgURL1(IOrganizationService service, ITracingService tracing)
+        private string GetOrgURL(IOrganizationService service, ITracingService tracing)
         {
             var query = new QueryExpression("new_environmentvariable")
             {
