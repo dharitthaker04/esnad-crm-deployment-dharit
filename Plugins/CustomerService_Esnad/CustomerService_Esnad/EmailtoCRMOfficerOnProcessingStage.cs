@@ -34,7 +34,7 @@ namespace CustomerService_Esnad
                 string caseTitle = caseEntity.GetAttributeValue<string>("title") ?? "Unknown";
 
                 // ✅ Get the assigned specialized team name
-                string assignedTeamName = "Not Assigned";
+                string assignedTeamName = " ";
                 if (caseEntity.Contains("new_assignedspecializedteam"))
                 {
                     var assignedTeamRef = caseEntity.GetAttributeValue<EntityReference>("new_assignedspecializedteam");

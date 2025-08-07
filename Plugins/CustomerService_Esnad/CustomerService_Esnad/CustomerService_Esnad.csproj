@@ -153,11 +153,13 @@
     <Compile Include="SendEmailNotificationToCRMOfficer.cs" />
     <Compile Include="SendEmailToCustomerServiceTeam.cs" />
     <Compile Include="SendNotificationtoCSTeamOnProcessingStage.cs" />
+    <Compile Include="SendWarningtoCurrentResponsibleEmployee.cs" />
     <Compile Include="SetBPFActiveStage.cs" />
     <Compile Include="SLALeval1.cs" />
     <Compile Include="SLALevel2.cs" />
     <Compile Include="SLALevel3.cs" />
     <Compile Include="ResolveCasePlugin.cs" />
+    <Compile Include="SLALevel4.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

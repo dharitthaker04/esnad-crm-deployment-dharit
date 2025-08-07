@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace CustomerService_Esnad
 {
-    public class SLALevel3 : IPlugin
+    public class SendWarningtoCurrentResponsibleEmployee : IPlugin
     {
         public void Execute(IServiceProvider serviceProvider)
         {
@@ -54,11 +54,12 @@ namespace CustomerService_Esnad
 
                 string orgURL = GetOrgURL(service);
                 string caseUrl = $"{orgURL}{caseId}";
+               
 
                 if (ownerRef.LogicalName == "team")
                 {
-                    tracing.Trace("Owner is a Team. Sending email to Sector Head in this team.");
-                    SendEmailToTeam(service, crmAdminUser, fromParty, caseId, caseTitle, ownerRef, ownerRef.Id, caseUrl, tracing, ownerRef.Name);
+                    tracing.Trace("Owner is a Team. Sending email to specialized admins in this team.");
+                    SendEmailToTeam(service, crmAdminUser, fromParty, caseId, caseTitle, ownerRef, ownerRef.Id, caseUrl, tracing);
                 }
                 else if (ownerRef.LogicalName == "systemuser")
                 {
@@ -82,12 +83,12 @@ namespace CustomerService_Esnad
             }
         }
 
-        private void SendEmailToTeam(IOrganizationService service, Entity crmAdminUser, Entity fromParty, Guid caseId, string caseTitle, EntityReference ownerRef, Guid teamId, string caseUrl, ITracingService tracing, string teamName)
+        private void SendEmailToTeam(IOrganizationService service, Entity crmAdminUser, Entity fromParty, Guid caseId, string caseTitle, EntityReference ownerRef, Guid teamId, string caseUrl, ITracingService tracing, string teamName = "")
         {
-            var users = GetSectorHeadInTeam(service, teamId, tracing);
+            var users = GetSpecializedAdminsInTeam(service, teamId, tracing);
             if (users.Count == 0)
             {
-                tracing.Trace($"No Department Manager found in team: {teamId}");
+                tracing.Trace($"No specialized admins found in team: {teamId}");
                 return;
             }
 
@@ -98,33 +99,30 @@ namespace CustomerService_Esnad
 
             tracing.Trace($"Creating email for team: {teamName}");
 
-            string subject = $"[SLA Escalation Level 3 -Sector Head] {teamName} - Case Breach Alert";
+            string subject = $"SLA Warning: Ticket is nearing failure {teamName}";
             string imageUrl = "http://d365.crm-esnad.com/";
+            string caseTitleHtml = $"<a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a>";
 
             var email = new Entity("email")
             {
                 ["subject"] = subject,
                 ["description"] = $@"
-        <html>
-        <body>
-            <p><img src='{imageUrl}' alt='CRM Logo' style='width:200px; margin-bottom:10px;' /></p>
-            <p>Dear Sector Head Team,<br/><br/></p>
-            <p>This is to inform you that the following case has breached its SLA threshold:</p>
-            <p>Please review: <a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a></p>
-            <p><strong>Assigned Agent:</strong> {ownerRef.Name}</p>
-            <br/>
-            <p>Thank you,</p>
-            <p>Best regards,</p>
-            <p>Support Escalation Team</p>
-        </body>
-        </html>",
+                <html>
+				<body>
+					<p><img src='{imageUrl}' alt='CRM Logo' style='max-width: 200px;' /></p>
+					<p>This is a warning: The following case is nearing its SLA failure threshold:</p>
+					<p>Please Give attention to {caseTitleHtml}</p>
+				   
+					<br/>
+					<p>Thank you,<br/>Support Escalation Team</p>
+				  </body>
+				</html>",
                 ["directioncode"] = true,
                 ["from"] = new EntityCollection(new[] { fromParty }),
                 ["to"] = new EntityCollection(toParties),
-                ["regardingobjectid"] = new EntityReference("incident",caseId),
-                ["statuscode"] = new OptionSetValue(1) // Draft
+                ["regardingobjectid"] = new EntityReference("incident", caseId),
+                ["statuscode"] = new OptionSetValue(1)
             };
-
 
             Guid emailId = service.Create(email);
             tracing.Trace($"Email created for team {teamName}. ID: {emailId}");
@@ -158,7 +156,7 @@ namespace CustomerService_Esnad
             return result.Entities.ToList();
         }
 
-        private List<Entity> GetSectorHeadInTeam(IOrganizationService service, Guid teamId, ITracingService tracing)
+        private List<Entity> GetSpecializedAdminsInTeam(IOrganizationService service, Guid teamId, ITracingService tracing)
         {
             var fetchXml = $@"
             <fetch>
@@ -175,14 +173,14 @@ namespace CustomerService_Esnad
                 </link-entity>
                 <link-entity name='position' from='positionid' to='positionid' link-type='inner'>
                   <filter>
-                    <condition attribute='name' operator='eq' value='Sector Head' />
+                    <condition attribute='name' operator='eq' value='Department Manager' />
                   </filter>
                 </link-entity>
               </entity>
             </fetch>";
 
             var result = service.RetrieveMultiple(new FetchExpression(fetchXml));
-            tracing.Trace($"Found {result.Entities.Count} Sector Head  in team {teamId}.");
+            tracing.Trace($"Found {result.Entities.Count} specialized admins in team {teamId}.");
             return result.Entities.ToList();
         }
 
