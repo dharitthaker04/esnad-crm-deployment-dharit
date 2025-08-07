@@ -3,7 +3,7 @@ using Microsoft.Xrm.Sdk.Query;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
+//// This Plugin Working for now Level 3
 namespace CustomerService_Esnad
 {
     public class SLALeval1 : IPlugin
@@ -98,7 +98,7 @@ namespace CustomerService_Esnad
 
             tracing.Trace($"Creating email for team: {teamName}");
 
-            string subject = $"[SLA Escalation Level 1] {teamName} - Case Breach Alert";
+            string subject = $"[SLA Escalation Level 3- Department Manager] {teamName} - Case Breach Alert";
             string imageUrl = "http://d365.crm-esnad.com/";
 
             var email = new Entity("email")
@@ -173,7 +173,7 @@ namespace CustomerService_Esnad
                 </link-entity>
                 <link-entity name='position' from='positionid' to='positionid' link-type='inner'>
                   <filter>
-                    <condition attribute='name' operator='eq' value='Specialized Dept. Officer' />
+                    <condition attribute='name' operator='eq' value='Department Manager' />
                   </filter>
                 </link-entity>
               </entity>
