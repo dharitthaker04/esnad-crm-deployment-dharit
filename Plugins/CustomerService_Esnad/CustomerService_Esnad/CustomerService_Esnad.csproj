@@ -160,6 +160,7 @@
     <Compile Include="SLALevel3.cs" />
     <Compile Include="ResolveCasePlugin.cs" />
     <Compile Include="SLALevel4.cs" />
+    <Compile Include="TicketCloseEmailToCustomer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
