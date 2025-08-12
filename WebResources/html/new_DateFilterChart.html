@@ -220,9 +220,19 @@ button.clear-btn:hover {
   background: #A58A60 !important;
   color: #fff !important;
 }
+.table-fixed { table-layout: fixed; width:100%; }
+.table-fixed th, .table-fixed td{
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.wrap2{                 /* allow 2-line wrap for long text cols */
+  white-space:normal;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;
+  overflow:hidden; word-break:break-word;
+}
+
 </style>
-<meta><meta><meta></head>
-<body data-new-gr-c-s-check-loaded="14.1246.0" data-gr-ext-installed="" data-new-gr-c-s-loaded="14.1246.0" style="overflow-wrap: break-word;">
+<meta><meta><meta><meta></head>
+<body data-new-gr-c-s-check-loaded="14.1248.0" data-gr-ext-installed="" data-new-gr-c-s-loaded="14.1248.0" style="overflow-wrap: break-word;">
 <div class="dashboard-card" style="font-family: undefined;">
   <div class="toolbar">
     <div class="filter-group">
@@ -257,15 +267,33 @@ button.clear-btn:hover {
 
   </div>
 
-  <div class="table-container">
-    <table>
+    <div class="table-container">
+    <table id="incidentGrid" class="table-fixed">
+      <colgroup>
+        <col style="width:80px">   <!-- Ticket -->
+        <col style="width:200px">  <!-- Title -->
+        <col style="width:90px">   <!-- Priority -->
+        <col style="width:160px">  <!-- Department -->
+        <col style="width:170px">  <!-- Created Date -->
+        <col style="width:240px">  <!-- Current Responsible -->
+        <col style="width:140px">  <!-- Ticket Type -->
+        <col style="width:180px">  <!-- Customer -->
+        <col style="width:180px">  <!-- Ticket Creator -->
+        <col style="width:120px">  <!-- Status -->
+        <col style="width:180px">  <!-- Submission Channel -->
+        <col style="width:160px">  <!-- Beneficiary Type -->
+        <col style="width:160px">  <!-- Request Type -->
+        <col style="width:320px">  <!-- Description -->
+        <col style="width:320px">  <!-- Solution Description -->
+        <col style="width:140px">  <!-- Ticket Resolved Date -->
+      </colgroup>
       <thead>
         <tr>
           <th>Ticket</th>
           <th>Title</th>
           <th>Priority</th>
           <th>Department</th>
-          <th onclick="sortBy('createdon')">Created Date ▲▼</th>
+          <th id="createdonHeader" onclick="sortBy('createdon')">Created Date ▲▼</th>
           <th>Current Responsible Employee</th>
           <th>Ticket Type</th>
           <th>Customer</th>
@@ -282,7 +310,6 @@ button.clear-btn:hover {
       <tbody id="incidentTableBody"></tbody>
     </table>
     <div class="pagination-wrapper" id="paginationContainer"></div>
-
   </div>
 </div>
 
@@ -366,23 +393,24 @@ function renderTable(data) {
   pageData.forEach(item => {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${item.ticketnumber}</td>
-      <td>${item.title}</td>
-      <td>${item.prioritycode}</td>
-      <td>${item.departmentname}</td>
-      <td>${item.createdonStr}</td>
-      <td>${item.currentEmployee}</td>
-      <td>${item.ticketType}</td>
-      <td>${item.customer}</td>
-      <td>${item.createdBy}</td>
-      <td>${item.status}</td>
-      <td>${item.submissionChannel}</td>
-      <td>${item.beneficiaryType}</td>
-      <td>${item.requestType}</td>
-      <td>${item.description}</td>
-      <td>${item.solutiondescription}</td>
-      <td>${item.resolvebyStr}</td>
-    `;
+  <td>${item.ticketnumber}</td>
+  <td>${item.title}</td>
+  <td>${item.prioritycode}</td>
+  <td>${item.departmentname}</td>
+  <td>${item.createdonStr}</td>
+  <td>${item.currentEmployee}</td>
+  <td>${item.ticketType}</td>
+  <td>${item.customer}</td>
+  <td>${item.createdBy}</td>
+  <td>${item.status}</td>
+  <td>${item.submissionChannel}</td>
+  <td>${item.beneficiaryType}</td>
+  <td>${item.requestType}</td>
+  <td>${item.description}</td>
+  <td>${item.solutiondescription}</td>
+  <td>${item.resolvebyStr}</td>
+`;
+
     tbody.appendChild(row);
   });
 
