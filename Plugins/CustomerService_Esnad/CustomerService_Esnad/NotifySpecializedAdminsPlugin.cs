@@ -107,10 +107,11 @@ using Microsoft.Xrm.Sdk.Query;
             string emailBody = $@"
                     <html>
                       <body>
-                        <p><img src='{imageUrl}' alt='CRM Logo' style='max-width: 200px;' /></p>
-                        <p>تم انشاء تذكرة جديدة رقم {caseTitleHtml}</p>
+                     
+                        <p>تم إنشاء تذكرة جديدة، {caseTitleHtml}، في حسابك.</p>
                         <p>يرجى اعتماد التذكرة وفقاً لاتفاقية مستوى الخدمة</p>
-                        
+                        <p>يرجى اعتماد التذكرة وفقًا لاتفاقية مستوى الخدمة (SLA) المعتمدة.</p>
+                        <p><img src='{imageUrl}' alt='CRM Logo' style='max-width: 200px;' /></p>
                       </body>
                     </html>";
 

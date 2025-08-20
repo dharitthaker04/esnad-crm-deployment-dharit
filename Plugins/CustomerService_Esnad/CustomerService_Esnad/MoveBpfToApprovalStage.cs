@@ -73,6 +73,7 @@ namespace CustomerService_Esnad
 
                 // ✅ Step 3: Save the Case record to trigger re-evaluation
                 var updateCase = new Entity("incident", caseId);
+                updateCase["statuscode"] = new OptionSetValue(100000006);
                 //updateCase["description"] = target.GetAttributeValue<string>("description"); // optional: reassign same data to simulate change
                 service.Update(updateCase);
                 tracing.Trace("✅ Case record updated/saved.");

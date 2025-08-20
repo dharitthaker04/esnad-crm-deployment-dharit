@@ -110,10 +110,10 @@ namespace CustomerService_Esnad
                 string emailBody = $@"
                     <html>
                       <body>
-                        <p><img src='{imageUrl}' alt='CRM Logo' style='max-width: 200px;' /></p>
+                       
                         <p>تم انشاء تذكرة جديدة رقم {caseTitleHtml}</p>
                         <p>يرجى اعتماد التذكرة وفقاً لاتفاقية مستوى الخدمة</p>
-                        
+                         <p><img src='{imageUrl}' alt='CRM Logo' style='max-width: 200px;' /></p>
                       </body>
                     </html>";
 

@@ -114,10 +114,11 @@ namespace CustomerService_Esnad
                 string emailBody = $@"
 <html>
   <body>
-    <p><img src='{imageUrl}' alt='CRM Logo' style='max-width: 200px;' /></p>
+    
     <p>The {assignedTeamName} has assigned Ticket No. {caseTitleHtml} to your department for further action. A comment has been added to the ticket with additional context.</p>
     <p>Kindly review the ticket and proceed accordingly.</p>
     <p>Please let us know if any further support is required.</p>
+<p><img src='{imageUrl}' alt='CRM Logo' style='max-width: 200px;' /></p>
   </body>
 </html>";
 

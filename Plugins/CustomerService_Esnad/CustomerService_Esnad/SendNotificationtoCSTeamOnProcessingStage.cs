@@ -94,10 +94,10 @@ namespace CustomerService_Esnad
                 string emailBody = $@"
      <html>
        <body>
-         <p><img src='{imageUrl}' alt='CRM Logo' style='max-width: 200px;' /></p>
+        
          <p>Ticket No. {caseTitleHtml}has been processed by the relevant department.</p>
          <p> Please check the solution and close the ticket according to the Service Level Agreement.</p>
-         
+          <p><img src='{imageUrl}' alt='CRM Logo' style='max-width: 200px;' /></p>
        </body>
      </html>";
 
