@@ -92,9 +92,10 @@ namespace CustomerService_Esnad
                 string emailBody = $@"
 <html>
   <body>
-    <p><img src='http://d365.crm-esnad.com/' alt='CRM Logo' style='max-width: 200px;' /></p>
+    
     <p>📝 <strong>Customer has responded to the ticket:</strong> {caseTitleHtml}</p>
     <p>يرجى مراجعة الرد واتخاذ الإجراءات اللازمة.</p>
+    <p><img src='http://d365.crm-esnad.com/' alt='CRM Logo' style='max-width: 200px;' /></p>
   </body>
 </html>";
 

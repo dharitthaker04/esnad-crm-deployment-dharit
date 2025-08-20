@@ -1,0 +1,263 @@
+<html><head>
+    <title>Assign Owner (Search Users)</title>
+    <meta charset="UTF-8">
+    <script src="ClientGlobalContext.js.aspx" type="text/javascript"></script>
+    <style>
+        :root {
+            --accent: #1365e8;
+            --border: #d0d5dd;
+            --muted: #5b6472;
+            --bg: #ffffff;
+            --hover: #f3f4f6;
+            --stripe: #fafafa;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 12px;
+            background: #fff;
+            color: #111827;
+            line-height: 1.35;
+            font-size: 15px;
+        }
+
+        /* Users list (multi-line items) */
+        .list {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #fff;
+            overflow: auto;
+            max-height: 60vh;
+        }
+
+        .user-item {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eef0f3;
+            cursor: pointer;
+            display: block;
+            background: linear-gradient(180deg, transparent 50%, var(--stripe) 50%) repeat-y;
+            background-size: 100% 48px;
+        }
+
+        .user-item:last-child {
+            border-bottom: none;
+        }
+
+        .user-item:hover {
+            background-color: var(--hover);
+        }
+
+        .user-name {
+            font-weight: 700;
+            font-size: 15px;
+            color: #111;
+        }
+
+        .team-name {
+            font-size: 13px;
+            color: #3b3f46;
+            margin-top: 3px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border: 1px solid #e5e7eb;
+            border-radius: 9999px;
+            font-size: 12px;
+            margin-right: 8px;
+            background: #fff;
+        }
+
+        /* Search bar */
+        .search-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .text-input {
+            padding: 11px 12px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 15px;
+        }
+
+        .small-icon-btn {
+            width: 44px;
+            height: 44px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #fff;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .small-icon-btn:hover {
+            background: var(--hover);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 11px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: #fff;
+            font-size: 15px;
+        }
+
+        .btn.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .btn:hover {
+            opacity: .96;
+        }
+
+        #loading {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 8px;
+        }
+    </style>
+<meta></head>
+<body data-new-gr-c-s-check-loaded="14.1249.0" data-gr-ext-installed="" data-new-gr-c-s-loaded="14.1249.0" style="overflow-wrap: break-word;">
+    <div class="search-row">
+        <input id="userSearch" class="text-input" type="text" placeholder="Filter by user…">
+        <button id="clearSearch" class="small-icon-btn" title="Clear">
+            <svg class="icon" viewBox="0 0 24 24">
+                <path d="M18.3 5.71 12 12.01l-6.29-6.3-1.42 1.42 6.3 6.29-6.3 6.29 1.42 1.42 6.29-6.3 6.29 6.3 1.42-1.42-6.3-6.29 6.3-6.29z"></path>
+            </svg>
+        </button>
+    </div>
+    <div id="usersList" class="list" aria-label="Users list"></div>
+    <div id="loading"></div>
+
+    <script>
+        // ---------- Utilities ----------
+        function getXrm() {
+            try {
+                return Xrm || parent.Xrm;
+            } catch {
+                return parent.Xrm;
+            }
+        }
+
+        function setOwnerOnParent(ownerId, ownerName, entityType) {
+            const x = getXrm();
+            const form = x && x.Page ? x.Page : null;
+            if (!form || !form.getAttribute) return;
+            const attr = form.getAttribute("ownerid");
+            if (!attr) return;
+            const withBraces = ownerId && ownerId.startsWith("{") ? ownerId : `{${ownerId}}`;
+            attr.setValue([{ id: withBraces, name: ownerName, entityType }]);
+        }
+
+        // ---------- Users (My Teams) ----------
+        const usersList = document.getElementById("usersList");
+        const loadingDiv = document.getElementById("loading");
+        const userSearch = document.getElementById("userSearch");
+        const clearSearch = document.getElementById("clearSearch");
+        let cachedUserEntries = []; // [{ id, name, teamName }]
+
+        async function loadUsersFromMyTeams() {
+            const x = getXrm();
+            usersList.innerHTML = "";
+            loadingDiv.textContent = "Loading team members…";
+            const me = x.Utility.getGlobalContext().userSettings.userId.replace(/[{}]/g, "");
+            try {
+                // 1) Teams current user belongs to
+                const myTeams = await x.WebApi.retrieveMultipleRecords("teammembership", `?$select=teamid&$filter=systemuserid eq ${me}`);
+                if (!myTeams.entities?.length) {
+                    loadingDiv.textContent = "You're not a member of any team.";
+                    return;
+                }
+                const teamIds = [...new Set(myTeams.entities.map(t => t.teamid))];
+
+                // 2) Build user-team pairs
+                const pairs = [];
+                for (const teamId of teamIds) {
+                    const team = await x.WebApi.retrieveRecord("team", teamId, "?$select=name");
+                    const teamName = team.name;
+                    const members = await x.WebApi.retrieveMultipleRecords("teammembership", `?$select=systemuserid&$filter=teamid eq ${teamId}`);
+                    members.entities.forEach(m => pairs.push({ systemuserid: m.systemuserid, teamName }));
+                }
+
+                if (!pairs.length) {
+                    loadingDiv.textContent = "No users found in your teams.";
+                    return;
+                }
+
+                // 3) Fetch names
+                const distinctIds = [...new Set(pairs.map(p => p.systemuserid))];
+                const filter = distinctIds.map(id => `systemuserid eq ${id}`).join(" or ");
+                const usersResp = await x.WebApi.retrieveMultipleRecords("systemuser", `?$select=systemuserid,fullname,isdisabled&$filter=(${filter}) and isdisabled eq false`);
+                const nameById = {};
+                usersResp.entities.forEach(u => nameById[u.systemuserid] = u.fullname);
+
+                // 4) Final entries (NO de-dup across teams)
+                cachedUserEntries = pairs
+                    .map(p => ({ id: p.systemuserid, name: nameById[p.systemuserid], teamName: p.teamName }))
+                    .filter(e => !!e.name)
+                    .sort((a, b) => (a.name + a.teamName).localeCompare(b.name + b.teamName));
+
+                renderUserEntries("");
+                loadingDiv.textContent = "";
+            } catch (err) {
+                console.error("Error loading team users:", err);
+                loadingDiv.textContent = "Error loading team users.";
+            }
+        }
+
+        function renderUserEntries(q) {
+            const query = (q || "").toLowerCase();
+            usersList.innerHTML = "";
+            const filtered = cachedUserEntries.filter(e => (e.name && e.name.toLowerCase().includes(query)) || (e.teamName && e.teamName.toLowerCase().includes(query)));
+            if (!filtered.length) {
+                usersList.innerHTML = '<div class="hint">No matches.</div>';
+                return;
+            }
+            filtered.forEach(e => {
+                const item = document.createElement("div");
+                item.className = "user-item";
+                item.innerHTML = `
+                    <div class="user-name">${e.name}</div>
+                    <div class="team-name"><span class="badge">Team</span>${e.teamName}</div>
+                `;
+                item.addEventListener("click", () => {
+                    setOwnerOnParent(e.id.replace(/[{}]/g, ""), e.name, "systemuser");
+                });
+                usersList.appendChild(item);
+            });
+        }
+
+        userSearch.addEventListener("input", (ev) => renderUserEntries(ev.target.value));
+        clearSearch.addEventListener("click", () => {
+            userSearch.value = "";
+            renderUserEntries("");
+            userSearch.focus();
+        });
+
+        // ---------- Init ----------
+        window.addEventListener("load", async () => {
+            await loadUsersFromMyTeams();
+        });
+    </script>
+
+
+</body><grammarly-desktop-integration data-grammarly-shadow-root="true"></grammarly-desktop-integration></html>

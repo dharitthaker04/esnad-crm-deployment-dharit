@@ -107,15 +107,16 @@ namespace CustomerService_Esnad
                 ["description"] = $@"
         <html>
         <body>
-            <p><img src='{imageUrl}' alt='CRM Logo' style='width:200px; margin-bottom:10px;' /></p>
-            <p>Dear Department Manager Team,<br/><br/></p>
-            <p>This is to inform you that the following case has breached its SLA threshold:</p>
+           
+            <p>With Regards and Appreciation,<br/><br/></p>
+            <pWe would like to inform you that the following ticket has exceeded the time frame specified in the Service Level Agreement (SLA):</p>
             <p>Please review: <a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a></p>
             <p><strong>Assigned Agent:</strong> {ownerRef.Name}</p>
             <br/>
-            <p>Thank you,</p>
-            <p>Best regards,</p>
-            <p>Support Escalation Team</p>
+            <p>Please take the necessary actions according to the approved escalation procedure to ensure prompt handling.</p>
+            <p>Thank you for your cooperation,</p>
+            <p>Investor Support Center – Mining Sector</p>
+            <p><img src='{imageUrl}' alt='CRM Logo' style='width:200px; margin-bottom:10px;' /></p>
         </body>
         </html>",
                 ["directioncode"] = true,

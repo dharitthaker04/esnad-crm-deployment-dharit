@@ -107,7 +107,6 @@ namespace CustomerService_Esnad
                 ["description"] = $@"
                 <html>
                 <body>
-                    <p><img src='{imageUrl}' alt='CRM Logo' style='width:200px; margin-bottom:10px;' /></p>
                     <p>Dear {teamName} Team,<br/><br/></p>
                     <p>This is to inform you that the following case has breached its SLA threshold:</p>
                     <p><a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a></p>
@@ -115,6 +114,7 @@ namespace CustomerService_Esnad
                     <br/>
                     <p>Thank you,</p>
                     <p>Support Escalation Team</p>
+                    <p><img src='{imageUrl}' alt='CRM Logo' style='width:200px; margin-bottom:10px;' /></p>
                 </body>
                 </html>",
                 ["directioncode"] = true,
