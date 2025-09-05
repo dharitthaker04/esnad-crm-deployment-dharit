@@ -99,7 +99,7 @@ using Microsoft.Xrm.Sdk.Query;
 
             string OrgURL = GetOrgURL(service);
             //string caseUrl = $"https://d365.crm-esnad.com/main.aspx?appid=0d3f8ee3-bd6f-4d2a-8205-8b8d5021b809&pagetype=entityrecord&etn=incident&id={caseRef.Id}";
-            string imageUrl = "http://d365.crm-esnad.com/"; // Use HTTPS if possible
+            string imageUrl = "https://feedback-dev.crm-esnad.com/Esnad-Logo.jpg"; // Use HTTPS if possible
             string caseUrl = $"{OrgURL}{caseRef.Id}";  // Concatenate the OrgURL and Case Id
             string caseTitleHtml = $"<a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a>";
 
@@ -174,7 +174,7 @@ using Microsoft.Xrm.Sdk.Query;
         {
             try
             {
-                var fetchXml = $@"
+            var fetchXml = $@"
             <fetch>
               <entity name='systemuser'>
                 <attribute name='systemuserid'/>
@@ -187,15 +187,17 @@ using Microsoft.Xrm.Sdk.Query;
                     <condition attribute='teamid' operator='eq' value='{teamId}' />
                   </filter>
                 </link-entity>
-                <link-entity name='position' from='positionid' to='positionid' link-type='inner'>
-                  <filter>
-                    <condition attribute='name' operator='eq' value='Specialized Dept. Officer' />
-                  </filter>
+                <link-entity name='systemuserroles' from='systemuserid' to='systemuserid' link-type='inner'>
+                  <link-entity name='role' from='roleid' to='roleid' link-type='inner'>
+                    <filter>
+                      <condition attribute='name' operator='eq' value='Esnad: Specialized Dept. Officer' />
+                    </filter>
+                  </link-entity>
                 </link-entity>
               </entity>
             </fetch>";
 
-                var result = service.RetrieveMultiple(new FetchExpression(fetchXml));
+            var result = service.RetrieveMultiple(new FetchExpression(fetchXml));
                 tracing.Trace($"Found {result.Entities.Count} specialized admin users in team {teamId}");
                 return result.Entities.ToList();
             }

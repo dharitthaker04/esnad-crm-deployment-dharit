@@ -121,7 +121,7 @@ namespace CustomerService_Esnad
 
             // Create the email subject and body
             string subject = $"[SLA Escalation Level 4] Case Breach Alert - {caseTitle}";
-            string imageUrl = "http://d365.crm-esnad.com/";
+            string imageUrl = "https://feedback-dev.crm-esnad.com/Esnad-Logo.jpg";
 
             var email = new Entity("email")
             {
@@ -183,22 +183,27 @@ namespace CustomerService_Esnad
         private List<Entity> GetSectorHeadInTeam(IOrganizationService service, Guid teamId, ITracingService tracing)
         {
             var fetchXml = $@"
-            <fetch>
-              <entity name='systemuser'>
-                <attribute name='systemuserid'/>
-                <attribute name='internalemailaddress'/>
-                <link-entity name='teammembership' from='systemuserid' to='systemuserid' link-type='inner'>
-                  <filter>
-                    <condition attribute='teamid' operator='eq' value='{teamId}' />
-                  </filter>
-                </link-entity>
-                <link-entity name='position' from='positionid' to='positionid' link-type='inner'>
-                  <filter>
-                    <condition attribute='name' operator='eq' value='Sector Head' />
-                  </filter>
-                </link-entity>
-              </entity>
-            </fetch>";
+<fetch>
+  <entity name='systemuser'>
+    <attribute name='systemuserid'/>
+    <attribute name='internalemailaddress'/>
+    <filter>
+      <condition attribute='accessmode' operator='eq' value='0' />
+    </filter>
+    <link-entity name='teammembership' from='systemuserid' to='systemuserid' link-type='inner'>
+      <filter>
+        <condition attribute='teamid' operator='eq' value='{teamId}' />
+      </filter>
+    </link-entity>
+    <link-entity name='systemuserroles' from='systemuserid' to='systemuserid' link-type='inner'>
+      <link-entity name='role' from='roleid' to='roleid' link-type='inner'>
+        <filter>
+          <condition attribute='name' operator='eq' value='Esnad: Sector Head' />
+        </filter>
+      </link-entity>
+    </link-entity>
+  </entity>
+</fetch>";
 
             var result = service.RetrieveMultiple(new FetchExpression(fetchXml));
             tracing.Trace($"Found {result.Entities.Count} Sector Head in team {teamId}.");
@@ -208,22 +213,27 @@ namespace CustomerService_Esnad
         private List<Entity> GetDepartmentManagerInTeam(IOrganizationService service, Guid teamId, ITracingService tracing)
         {
             var fetchXml = $@"
-            <fetch>
-              <entity name='systemuser'>
-                <attribute name='systemuserid'/>
-                <attribute name='internalemailaddress'/>
-                <link-entity name='teammembership' from='systemuserid' to='systemuserid' link-type='inner'>
-                  <filter>
-                    <condition attribute='teamid' operator='eq' value='{teamId}' />
-                  </filter>
-                </link-entity>
-                <link-entity name='position' from='positionid' to='positionid' link-type='inner'>
-                  <filter>
-                    <condition attribute='name' operator='eq' value='Department Manager' />
-                  </filter>
-                </link-entity>
-              </entity>
-            </fetch>";
+    <fetch>
+      <entity name='systemuser'>
+        <attribute name='systemuserid'/>
+        <attribute name='internalemailaddress'/>
+        <filter>
+          <condition attribute='accessmode' operator='eq' value='0' />
+        </filter>
+        <link-entity name='teammembership' from='systemuserid' to='systemuserid' link-type='inner'>
+          <filter>
+            <condition attribute='teamid' operator='eq' value='{teamId}' />
+          </filter>
+        </link-entity>
+        <link-entity name='systemuserroles' from='systemuserid' to='systemuserid' link-type='inner'>
+          <link-entity name='role' from='roleid' to='roleid' link-type='inner'>
+            <filter>
+              <condition attribute='name' operator='eq' value='Esnad: Department Manager' />
+            </filter>
+          </link-entity>
+        </link-entity>
+      </entity>
+    </fetch>";
 
             var result = service.RetrieveMultiple(new FetchExpression(fetchXml));
             tracing.Trace($"Found {result.Entities.Count} Department Managers in team {teamId}.");
@@ -255,13 +265,16 @@ namespace CustomerService_Esnad
               <entity name='systemuser'>
                 <attribute name='systemuserid'/>
                 <attribute name='internalemailaddress'/>
-                <link-entity name='position' from='positionid' to='positionid'>
-                  <filter>
-                    <condition attribute='name' operator='eq' value='CEO' />
-                  </filter>
+                <link-entity name='systemuserroles' from='systemuserid' to='systemuserid' link-type='inner'>
+                  <link-entity name='role' from='roleid' to='roleid' link-type='inner'>
+                    <filter>
+                      <condition attribute='name' operator='eq' value='Esnad: CEO' />
+                    </filter>
+                  </link-entity>
                 </link-entity>
               </entity>
             </fetch>";
+
 
             var result = service.RetrieveMultiple(new FetchExpression(fetchXml));
             tracing.Trace($"Found {result.Entities.Count} CEO.");

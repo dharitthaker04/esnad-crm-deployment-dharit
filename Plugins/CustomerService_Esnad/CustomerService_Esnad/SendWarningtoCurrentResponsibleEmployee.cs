@@ -100,7 +100,7 @@ namespace CustomerService_Esnad
             tracing.Trace($"Creating email for team: {teamName}");
 
             string subject = $"SLA Warning: Ticket is nearing failure {teamName}";
-            string imageUrl = "http://d365.crm-esnad.com/";
+            string imageUrl = "https://feedback-dev.crm-esnad.com/Esnad-Logo.jpg";
             string caseTitleHtml = $"<a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a>";
 
             var email = new Entity("email")
@@ -172,10 +172,12 @@ namespace CustomerService_Esnad
                     <condition attribute='teamid' operator='eq' value='{teamId}' />
                   </filter>
                 </link-entity>
-                <link-entity name='position' from='positionid' to='positionid' link-type='inner'>
-                  <filter>
-                    <condition attribute='name' operator='eq' value='Department Manager' />
-                  </filter>
+                <link-entity name='systemuserroles' from='systemuserid' to='systemuserid' link-type='inner'>
+                  <link-entity name='role' from='roleid' to='roleid' link-type='inner'>
+                    <filter>
+                      <condition attribute='name' operator='eq' value='Esnad: Specialized Dept. Officer' />
+                    </filter>
+                  </link-entity>
                 </link-entity>
               </entity>
             </fetch>";

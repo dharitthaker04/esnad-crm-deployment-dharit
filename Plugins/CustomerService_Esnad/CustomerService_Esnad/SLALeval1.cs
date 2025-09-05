@@ -99,7 +99,7 @@ namespace CustomerService_Esnad
             tracing.Trace($"Creating email for team: {teamName}");
 
             string subject = $"[SLA Escalation Level 3- Department Manager] {teamName} - Case Breach Alert";
-            string imageUrl = "http://d365.crm-esnad.com/";
+            string imageUrl = "https://feedback-dev.crm-esnad.com/Esnad-Logo.jpg";
 
             var email = new Entity("email")
             {
@@ -159,28 +159,30 @@ namespace CustomerService_Esnad
         private List<Entity> GetSpecializedAdminsInTeam(IOrganizationService service, Guid teamId, ITracingService tracing)
         {
             var fetchXml = $@"
-            <fetch>
-              <entity name='systemuser'>
-                <attribute name='systemuserid'/>
-                <attribute name='internalemailaddress'/>
-                <filter>
-                  <condition attribute='accessmode' operator='eq' value='0' />
-                </filter>
-                <link-entity name='teammembership' from='systemuserid' to='systemuserid' link-type='inner'>
-                  <filter>
-                    <condition attribute='teamid' operator='eq' value='{teamId}' />
-                  </filter>
-                </link-entity>
-                <link-entity name='position' from='positionid' to='positionid' link-type='inner'>
-                  <filter>
-                    <condition attribute='name' operator='eq' value='Department Manager' />
-                  </filter>
-                </link-entity>
-              </entity>
-            </fetch>";
+    <fetch>
+      <entity name='systemuser'>
+        <attribute name='systemuserid'/>
+        <attribute name='internalemailaddress'/>
+        <filter>
+          <condition attribute='accessmode' operator='eq' value='0' />
+        </filter>
+        <link-entity name='teammembership' from='systemuserid' to='systemuserid' link-type='inner'>
+          <filter>
+            <condition attribute='teamid' operator='eq' value='{teamId}' />
+          </filter>
+        </link-entity>
+        <link-entity name='systemuserroles' from='systemuserid' to='systemuserid' link-type='inner'>
+          <link-entity name='role' from='roleid' to='roleid' link-type='inner'>
+            <filter>
+              <condition attribute='name' operator='eq' value='Esnad: Department Manager' />
+            </filter>
+          </link-entity>
+        </link-entity>
+      </entity>
+    </fetch>";
 
             var result = service.RetrieveMultiple(new FetchExpression(fetchXml));
-            tracing.Trace($"Found {result.Entities.Count} specialized admins in team {teamId}.");
+            tracing.Trace($"Found {result.Entities.Count} users with role 'Esnad: Department Manager' in team {teamId}.");
             return result.Entities.ToList();
         }
 

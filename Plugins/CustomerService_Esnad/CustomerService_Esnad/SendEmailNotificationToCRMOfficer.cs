@@ -33,26 +33,28 @@ namespace CustomerService_Esnad
                 var caseEntity = service.Retrieve("incident", caseId, new ColumnSet("title"));
                 string caseTitle = caseEntity.GetAttributeValue<string>("title") ?? "Unknown";
 
-                // ✅ Fetch only users in the team with Position = CRM Officer
-                string fetchXml = $@"
+                // ✅ Fetch only users in the team with role = CRM Officer
+                var fetchXml = $@"
 <fetch>
-   <entity name='systemuser'>
-     <attribute name='systemuserid'/>
-     <attribute name='internalemailaddress'/>
-     <filter>
-       <condition attribute='accessmode' operator='eq' value='0' /> <!-- Active user -->
-     </filter>
-     <link-entity name='teammembership' from='systemuserid' to='systemuserid' link-type='inner'>
-       <filter>
-         <condition attribute='teamid' operator='eq' value='{teamId}' />
-       </filter>
-     </link-entity>
-     <link-entity name='position' from='positionid' to='positionid' link-type='inner'>
-       <filter>
-         <condition attribute='name' operator='eq' value='CRM Officer' />
-       </filter>
-     </link-entity>
-   </entity>
+  <entity name='systemuser'>
+    <attribute name='systemuserid'/>
+    <attribute name='internalemailaddress'/>
+    <filter>
+      <condition attribute='accessmode' operator='eq' value='0' />
+    </filter>
+    <link-entity name='teammembership' from='systemuserid' to='systemuserid' link-type='inner'>
+      <filter>
+        <condition attribute='teamid' operator='eq' value='{teamId}' />
+      </filter>
+    </link-entity>
+    <link-entity name='systemuserroles' from='systemuserid' to='systemuserid' link-type='inner'>
+      <link-entity name='role' from='roleid' to='roleid' link-type='inner'>
+        <filter>
+          <condition attribute='name' operator='eq' value='Esnad: CRM Officer' />
+        </filter>
+      </link-entity>
+    </link-entity>
+  </entity>
 </fetch>";
 
                 var users = service.RetrieveMultiple(new FetchExpression(fetchXml)).Entities;
@@ -94,7 +96,7 @@ namespace CustomerService_Esnad
                 // ✅ Build email
                 string orgUrl = GetOrgURL(service, tracing);
                 string caseUrl = $"{orgUrl}{caseId}";
-                string imageUrl = "https://d365.crm-esnad.com/WebResources/esnad_logo.png"; // Update with actual logo URL
+                string imageUrl = "https://feedback-dev.crm-esnad.com/Esnad-Logo.jpg"; // Update with actual logo URL
 
                 string caseTitleHtml = $"<a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a>";
 

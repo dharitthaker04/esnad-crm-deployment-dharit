@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Company Export (Tickets + Visits)</title>
+
+  <!-- Export libs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    body { margin:0; font-family: Arial, sans-serif; background:#FAFAFA; }
+    .dashboard-card { background:#fff; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,.1); width:98%; margin:10px auto; padding:10px; }
+    .toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; background:#FAFAFA; padding:10px; border-bottom:1px solid #ddd; }
+    .left-title { font-weight:700; font-size:16px; color:#5B4A35; }
+    .export-dropdown { position:relative; }
+    .export-btn { background:#A58A60; color:#fff; border:none; padding:8px 14px; border-radius:6px; font-size:14px; cursor:pointer; }
+    .export-btn:hover { background:#7E6A4C; }
+    .export-dropdown-menu { display:none; position:absolute; background:#fff; border:1px solid #ccc; border-radius:6px; min-width:220px; box-shadow:0 4px 8px rgba(0,0,0,.1); top:40px; right:0; z-index:1000; }
+    .export-dropdown-menu.show { display:block; }
+    .export-dropdown-menu button { width:100%; padding:10px; border:none; background:none; text-align:left; font-size:14px; }
+    .export-dropdown-menu button:hover { background:#7E6A4C; color:#fff; }
+
+    .table-container { overflow-x:auto; margin-top:10px; }
+    table { border-collapse:collapse; width:100%; min-width:1100px; }
+    th, td { border:1px solid #ccc; padding:10px; text-align:left; white-space:nowrap; }
+    th { background:#A58A60; color:#fff; position:sticky; top:0; z-index:100; }
+    tr:nth-child(even) { background:#f9f9f9; }
+    tr:hover { background:#F5F2ED; }
+    .table-fixed { table-layout:fixed; width:100%; }
+    .table-fixed th, .table-fixed td { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+    .pagination-wrapper { display:flex; justify-content:center; align-items:center; margin:15px auto; gap:20px; text-align:center; width:100%; flex-wrap:wrap; }
+    .pagination { display:flex; gap:6px; }
+    .pagination button { padding:6px 12px; border:1px solid #A58A60; background:#D7CAB2; cursor:pointer; border-radius:4px; color:#5B4A35; font-size:14px; }
+    .pagination button.active { background:#A58A60; color:#fff; font-weight:bold; }
+    .page-jump input { padding:6px; width:60px; text-align:center; border:1px solid #ccc; border-radius:4px; }
+    .page-jump button { padding:6px 10px; background:#A58A60; color:#fff; border-radius:4px; margin-left:5px; }
+    .pagination-info { font-size:14px; color:#555; font-weight:bold; }
+
+    .rows-group { display:flex; align-items:center; gap:8px; }
+    select { padding:8px 10px; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#fff; }
+  </style>
+</head>
+<body>
+<div class="dashboard-card">
+  <div class="toolbar">
+    <div class="left-title">Companies</div>
+
+    <div class="rows-group">
+      <label for="rowsPerPage"><b>Rows per page:</b></label>
+      <select id="rowsPerPage" onchange="changeRowsPerPage()">
+        <option value="10">10</option>
+        <option value="20" selected>20</option>
+        <option value="40">40</option>
+        <option value="100">100</option>
+      </select>
+
+      <div class="export-dropdown">
+        <button class="export-btn" id="exportToggle">⬇ Export ▼</button>
+        <div id="exportDropdown" class="export-dropdown-menu">
+          <button onclick="exportToExcel()">📊 Export to Excel</button>
+          <button onclick="exportToPDF()">📄 Export to PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table id="accountGrid" class="table-fixed">
+      <colgroup>
+        <col style="width:280px">  <!-- Company name -->
+        <col style="width:180px">  <!-- CR Number -->
+        <col style="width:260px">  <!-- Email -->
+        <col style="width:180px">  <!-- Phone number -->
+        <col style="width:190px">  <!-- Total Number of tickets -->
+        <col style="width:190px">  <!-- Total Number of visits -->
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Company name</th>
+          <th>CR Number</th>
+          <th>Email</th>
+          <th>Phone number</th>
+          <th>Total Number of tickets</th>
+          <th>Total Number of visits</th>
+        </tr>
+      </thead>
+      <tbody id="accountTableBody"></tbody>
+    </table>
+    <div class="pagination-wrapper" id="paginationContainer"></div>
+  </div>
+</div>
+
+<script>
+/* ---------------------- Config ---------------------- */
+var VISITOR_ENTITY = "new_visitor";             // singular logical name
+var VISITOR_ID = "new_visitorid";               // visitor primary id
+var VISITOR_COMPANY_LOOKUP = "new_companyname"; // lookup to account
+
+/* ---------------------- State ---------------------- */
+var accountData = [];
+var currentPage = 1;
+var rowsPerPage = 20;
+
+/* ---------------------- Context ---------------------- */
+var context = (typeof Xrm !== "undefined") ? Xrm : (typeof parent.Xrm !== "undefined" ? parent.Xrm : null);
+if (!context) { alert("Open this page inside Dynamics 365."); throw new Error("Xrm not found"); }
+
+/* ---------------------- FetchXML: Accounts ---------------------- */
+var accountFetchXml =
+  '<fetch>' +
+    '<entity name="account">' +
+      '<attribute name="accountid" />' +
+      '<attribute name="name" />' +
+      '<attribute name="emailaddress1" />' +
+      '<attribute name="new_crnumber" />' +
+      '<attribute name="new_companyrepresentativephonenumber" />' +
+      '<order attribute="createdon" descending="true" />' +
+    '</entity>' +
+  '</fetch>';
+
+/* ---------------------- FetchXML: Ticket count per Account ---------------------- */
+var ticketCountFetchXml =
+  '<fetch aggregate="true">' +
+    '<entity name="account">' +
+      '<attribute name="accountid" groupby="true" alias="accid" />' +
+      '<link-entity name="incident" from="customerid" to="accountid" link-type="outer" alias="i">' +
+        '<attribute name="incidentid" aggregate="countcolumn" alias="ticketcount" />' +
+      '</link-entity>' +
+    '</entity>' +
+  '</fetch>';
+
+/* ---------------------- FetchXML: Visitor count per Account ---------------------- */
+var visitorCountFetchXml =
+  '<fetch aggregate="true">' +
+    '<entity name="account">' +
+      '<attribute name="accountid" groupby="true" alias="accid" />' +
+      '<link-entity name="' + VISITOR_ENTITY + '" from="' + VISITOR_COMPANY_LOOKUP + '" to="accountid" link-type="outer" alias="v">' +
+        '<attribute name="' + VISITOR_ID + '" aggregate="countcolumn" alias="visitorcount" />' +
+      '</link-entity>' +
+    '</entity>' +
+  '</fetch>';
+
+/* ---------------------- Data Load ---------------------- */
+// helper to fetch ALL records from a FetchXML
+async function fetchAllRecords(entityLogicalName, fetchXml) {
+  let allEntities = [];
+  let query = "?fetchXml=" + encodeURIComponent(fetchXml);
+
+  while (true) {
+    const result = await context.WebApi.retrieveMultipleRecords(entityLogicalName, query);
+    allEntities = allEntities.concat(result.entities);
+
+    if (result["@odata.nextLink"]) {
+      // next page → convert full nextLink URL to relative query part
+      query = result["@odata.nextLink"].split(entityLogicalName)[1];
+    } else {
+      break; // no more pages
+    }
+  }
+  return allEntities;
+}
+
+async function fetchAccounts() {
+  var result = await context.WebApi.retrieveMultipleRecords(
+    "account", "?fetchXml=" + encodeURIComponent(accountFetchXml)
+  );
+
+  var rows = result.entities.map(function (rec) {
+    return {
+      accountid: rec.accountid,
+      name: rec.name || "",
+      crNumber: rec.new_crnumber || "",
+      email: rec.emailaddress1 || "",
+      phone: rec.new_companyrepresentativephonenumber || "",
+      tickets: 0,
+      visits: 0
+    };
+  });
+
+  var results = await Promise.all([ fetchTicketCounts(), fetchVisitorCounts() ]);
+  var ticketMap = results[0], visitMap = results[1];
+
+  rows.forEach(function (r) {
+    var key = (r.accountid || "").toLowerCase();
+    r.tickets = ticketMap.get(key) != null ? ticketMap.get(key) : 0;
+    r.visits  = visitMap.get(key)  != null ? visitMap.get(key)  : 0;
+  });
+
+  accountData = rows;
+  renderTable(accountData);
+}
+
+async function fetchTicketCounts() {
+  var res = await context.WebApi.retrieveMultipleRecords(
+    "account", "?fetchXml=" + encodeURIComponent(ticketCountFetchXml)
+  );
+  var m = new Map();
+  (res.entities || []).forEach(function (e) {
+    var id = (e.accid || "").toLowerCase();
+    var c  = Number(e.ticketcount || 0);
+    if (id) m.set(id, c);
+  });
+  return m;
+}
+
+async function fetchVisitorCounts() {
+  var res = await context.WebApi.retrieveMultipleRecords(
+    "account", "?fetchXml=" + encodeURIComponent(visitorCountFetchXml)
+  );
+  var m = new Map();
+  (res.entities || []).forEach(function (e) {
+    var id = (e.accid || "").toLowerCase();
+    var c  = Number(e.visitorcount || 0);
+    if (id) m.set(id, c);
+  });
+  return m;
+}
+
+/* ---------------------- Render ---------------------- */
+function renderTable(data) {
+  var tbody = document.getElementById("accountTableBody");
+  tbody.innerHTML = "";
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML =
+      '<tr><td colspan="6" style="text-align:center;font-weight:bold;padding:40px;">No data</td></tr>';
+    document.getElementById("paginationContainer").style.display = "none";
+    return;
+  } else {
+    document.getElementById("paginationContainer").style.display = "flex";
+  }
+
+  rowsPerPage = parseInt(document.getElementById("rowsPerPage").value || "20", 10);
+  var startIndex = (currentPage - 1) * rowsPerPage;
+  var pageData = data.slice(startIndex, startIndex + rowsPerPage);
+
+  pageData.forEach(function (r) {
+    var tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td title="' + escapeHtml(r.name)     + '">' + escapeHtml(r.name)     + '</td>' +
+      '<td title="' + escapeHtml(r.crNumber) + '">' + escapeHtml(r.crNumber) + '</td>' +
+      '<td title="' + escapeHtml(r.email)    + '">' + escapeHtml(r.email)    + '</td>' +
+      '<td title="' + escapeHtml(r.phone)    + '">' + escapeHtml(r.phone)    + '</td>' +
+      '<td>' + r.tickets + '</td>' +
+      '<td>' + r.visits  + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  renderPagination(data.length);
+}
+
+function escapeHtml(s) {
+  s = (s == null ? "" : String(s));
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;")
+          .replace(/>/g,"&gt;").replace(/"/g,"&quot;")
+          .replace(/'/g,"&#039;");
+}
+
+/* ---------------------- Pagination ---------------------- */
+function renderPagination(totalRecords) {
+  var container = document.getElementById("paginationContainer");
+  container.innerHTML = "";
+
+  var totalPages = Math.ceil(totalRecords / rowsPerPage);
+  if (totalPages <= 1) return;
+
+  var wrapper = document.createElement("div");
+  wrapper.className = "pagination-wrapper";
+
+  var pag = document.createElement("div");
+  pag.className = "pagination";
+
+  var prev = createBtn("Prev", function(){ if (currentPage > 1) { currentPage--; renderTable(accountData); }}, currentPage===1);
+  pag.appendChild(prev);
+
+  var start = Math.max(1, currentPage - 2);
+  var end   = Math.min(totalPages, currentPage + 2);
+
+  if (start > 1) {
+    pag.appendChild(pageBtn(1));
+    if (start > 2) pag.appendChild(dots());
+  }
+  for (var i=start;i<=end;i++) pag.appendChild(pageBtn(i, i===currentPage));
+  if (end < totalPages) {
+    if (end < totalPages-1) pag.appendChild(dots());
+    pag.appendChild(pageBtn(totalPages));
+  }
+
+  var next = createBtn("Next", function(){ if (currentPage < totalPages) { currentPage++; renderTable(accountData); }}, currentPage===totalPages);
+  pag.appendChild(next);
+
+  var jump = document.createElement("div");
+  jump.className = "page-jump";
+  var inp = document.createElement("input");
+  inp.type = "number"; inp.placeholder = "Page"; inp.min = 1; inp.max = totalPages;
+  var go = document.createElement("button"); go.textContent = "Go";
+  go.onclick = function(){
+    var p = parseInt(inp.value,10);
+    if (p>=1 && p<=totalPages) { currentPage = p; renderTable(accountData); }
+    else { alert("Enter a valid page number (1-" + totalPages + ")"); }
+  };
+  jump.appendChild(inp); jump.appendChild(go);
+
+  var info = document.createElement("div");
+  info.className = "pagination-info";
+  var s = (currentPage - 1) * rowsPerPage + 1;
+  var e = Math.min(currentPage * rowsPerPage, totalRecords);
+  info.innerText = "Showing " + s + "–" + e + " of " + totalRecords + " results";
+
+  wrapper.appendChild(pag); wrapper.appendChild(jump); wrapper.appendChild(info);
+  container.appendChild(wrapper);
+
+  function createBtn(text, onClick, disabled) {
+    var b = document.createElement("button");
+    b.innerText = text; b.disabled = !!disabled; b.onclick = onClick; return b;
+  }
+  function pageBtn(p, active) {
+    var b = document.createElement("button"); b.textContent = p;
+    if (active) b.classList.add("active");
+    b.onclick = function(){ currentPage = p; renderTable(accountData); };
+    return b;
+  }
+  function dots(){ var s=document.createElement("span"); s.textContent="..."; return s; }
+}
+
+/* ---------------------- Rows per page ---------------------- */
+function changeRowsPerPage() { rowsPerPage = parseInt(document.getElementById("rowsPerPage").value,10); currentPage = 1; renderTable(accountData); }
+
+/* ---------------------- Export ---------------------- */
+function exportToExcel() {
+  var data = accountData.map(function(d){
+    return {
+      "Company name": d.name,
+      "CR Number": d.crNumber,
+      "Email": d.email,
+      "Phone number": d.phone,
+      "Total Number of tickets": d.tickets,
+      "Total Number of visits": d.visits
+    };
+  });
+  var ws = XLSX.utils.json_to_sheet(data);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Companies");
+  XLSX.writeFile(wb, "Companies.xlsx");
+}
+
+function exportToPDF() {
+  var jsPDFRef = window.jspdf;
+  var doc = new jsPDFRef.jsPDF('l','pt','a4');
+  doc.setFontSize(16); doc.text("Companies", 40, 30);
+
+  var head = [[ "Company name", "CR Number", "Email", "Phone number", "Total Number of tickets", "Total Number of visits" ]];
+  var body = accountData.map(function(d){ return [ d.name, d.crNumber, d.email, d.phone, d.tickets, d.visits ]; });
+
+  if (doc.autoTable) {
+    doc.autoTable({
+      head: head,
+      body: body,
+      startY: 50,
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [165,138,96] }
+    });
+  }
+  doc.save("Companies.pdf");
+}
+
+/* ---------------------- Init ---------------------- */
+document.getElementById("exportToggle").addEventListener("click", function (e) {
+  e.stopPropagation();
+  document.getElementById("exportDropdown").classList.toggle("show");
+});
+document.addEventListener("click", function () {
+  var d = document.getElementById("exportDropdown");
+  if (d.classList.contains("show")) d.classList.remove("show");
+});
+
+window.onload = function(){ fetchAccounts(); };
+</script>
+</body>
+</html>

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.WebRequestMethods;
 
 namespace CustomerService_Esnad
 {
@@ -85,7 +86,7 @@ namespace CustomerService_Esnad
                 };
 
                 // Build email
-                string imageUrl = "http://d365.crm-esnad.com/"; // Use HTTPS if possible
+                string imageUrl = "https://feedback-dev.crm-esnad.com/Esnad-Logo.jpg"; // Use HTTPS if possible
                 string orgUrl = GetOrgURL1(service, tracing);
                 string caseUrl = $"{orgUrl}{caseId}";
                 string caseTitleHtml = $"<a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a>";
