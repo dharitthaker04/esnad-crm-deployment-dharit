@@ -102,7 +102,7 @@ namespace CustomerService_Esnad
 
                 string OrgURL = GetOrgURL(service);
                 //string caseUrl = $"https://d365.crm-esnad.com/main.aspx?appid=0d3f8ee3-bd6f-4d2a-8205-8b8d5021b809&pagetype=entityrecord&etn=incident&id={caseRef.Id}";
-                string imageUrl = "http://d365.crm-esnad.com/"; // Use HTTPS if possible
+                string imageUrl = "https://feedback-dev.crm-esnad.com/Esnad-Logo.jpg"; // Use HTTPS if possible
                 string caseUrl = $"{OrgURL}{caseRef.Id}";  // Concatenate the OrgURL and Case Id
                 string caseTitleHtml = $"<a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a>";
 
