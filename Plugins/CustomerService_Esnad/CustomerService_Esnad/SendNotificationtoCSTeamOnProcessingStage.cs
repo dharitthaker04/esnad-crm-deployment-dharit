@@ -95,16 +95,18 @@ namespace CustomerService_Esnad
                 string emailBody = $@"
      <html>
        <body>
-        
+     <p> تم معالجة التذكرة رقم {caseTitleHtml} من قبل الإدارة المختصة.</p>
+     <p>يرجى التحقق من الحل واغلاق التذكرة وفقاً لإتفاقية مستوى الخدمة (SLA) المعتمدة.</p>
+   
          <p>Ticket No. {caseTitleHtml}has been processed by the relevant department.</p>
-         <p> Please check the solution and close the ticket according to the Service Level Agreement.</p>
+         <p> Kindly review the resolution and close the ticket in accordance with the approved Service Level Agreement (SLA).</p>
           <p><img src='{imageUrl}' alt='CRM Logo' style='max-width: 200px;' /></p>
        </body>
      </html>";
 
                 var email = new Entity("email")
                 {
-                    ["subject"] = $"Ticket Assign to your Team {caseTitle}",
+                    ["subject"] = $"Ticket Assign to your Team - {caseTitle}",
                     ["description"] = emailBody,
                     ["directioncode"] = true,
                     ["from"] = new EntityCollection(new[] { fromParty }),

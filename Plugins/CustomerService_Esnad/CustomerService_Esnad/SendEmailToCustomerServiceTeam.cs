@@ -113,7 +113,12 @@ namespace CustomerService_Esnad
                        
                         <p>تم انشاء تذكرة جديدة رقم {caseTitleHtml}</p>
                         <p>يرجى اعتماد التذكرة وفقاً لاتفاقية مستوى الخدمة</p>
-                         <p><img src='{imageUrl}' alt='CRM Logo' style='max-width: 200px;' /></p>
+
+                        <p>A new ticket  {caseTitleHtml} has been assigned to your account.</p>
+                        <p>Ticket Priority Level : Urgent</p>
+                        <p>Kindly process the ticket in accordance with the approved Service Level Agreement (SLA).</p
+        
+                        <p><img src='{imageUrl}' alt='CRM Logo' style='max-width: 200px;' /></p>
                       </body>
                     </html>";
 
