@@ -31,7 +31,7 @@ namespace CustomerService_Esnad
                 tracing.Trace($"Processing Case ID: {caseId}");
 
                 // Retrieve Case details
-                Entity caseEntity = service.Retrieve("incident", caseId, new ColumnSet("ownerid", "title"));
+                Entity caseEntity = service.Retrieve("incident", caseId, new ColumnSet("ownerid", "title", "ticketnumber"));
                 if (!caseEntity.Contains("ownerid"))
                 {
                     tracing.Trace("Case does not have an owner. Exiting.");
@@ -40,6 +40,7 @@ namespace CustomerService_Esnad
 
                 string caseTitle = caseEntity.GetAttributeValue<string>("title") ?? "(No Title)";
                 EntityReference ownerRef = caseEntity.GetAttributeValue<EntityReference>("ownerid");
+                string TicketNumber = caseEntity.GetAttributeValue<string>("ticketnumber") ?? "(No number)";
                 tracing.Trace($"Case Owner: {ownerRef.Name}, Type: {ownerRef.LogicalName}");
 
                 // Fetch crmadmin as sender
@@ -58,7 +59,7 @@ namespace CustomerService_Esnad
                 if (ownerRef.LogicalName == "team")
                 {
                     tracing.Trace("Owner is a Team. Sending email to Sector Head in this team.");
-                    SendEmailToTeam(service, crmAdminUser, fromParty, caseId, caseTitle, ownerRef, ownerRef.Id, caseUrl, tracing, ownerRef.Name);
+                    SendEmailToTeam(service, crmAdminUser, fromParty, caseId, caseTitle, ownerRef, ownerRef.Id, caseUrl, TicketNumber, tracing, ownerRef.Name);
                 }
                 else if (ownerRef.LogicalName == "systemuser")
                 {
@@ -69,7 +70,7 @@ namespace CustomerService_Esnad
                     foreach (var team in teams)
                     {
                         tracing.Trace($"Processing team: {team.GetAttributeValue<string>("name")}");
-                        SendEmailToTeam(service, crmAdminUser, fromParty, caseId, caseTitle, ownerRef, team.Id, caseUrl, tracing, team.GetAttributeValue<string>("name"));
+                        SendEmailToTeam(service, crmAdminUser, fromParty, caseId, caseTitle, ownerRef, team.Id, caseUrl, TicketNumber, tracing, team.GetAttributeValue<string>("name"));
                     }
                 }
 
@@ -82,7 +83,7 @@ namespace CustomerService_Esnad
             }
         }
 
-        private void SendEmailToTeam(IOrganizationService service, Entity crmAdminUser, Entity fromParty, Guid caseId, string caseTitle, EntityReference ownerRef, Guid teamId, string caseUrl, ITracingService tracing, string teamName)
+        private void SendEmailToTeam(IOrganizationService service, Entity crmAdminUser, Entity fromParty, Guid caseId, string caseTitle, EntityReference ownerRef, Guid teamId, string caseUrl, string TicketNumber, ITracingService tracing, string teamName)
         {
             var users = GetSectorHeadInTeam(service, teamId, tracing);
             if (users.Count == 0)
@@ -106,18 +107,26 @@ namespace CustomerService_Esnad
                 ["subject"] = subject,
                 ["description"] = $@"
         <html>
-        <body>
-            
-            <p>Dear Sector Head Team,<br/><br/></p>
-            <p>This is to inform you that the following case has breached its SLA threshold:</p>
-            <p>Please review: <a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a></p>
-            <p><strong>Assigned Agent:</strong> {ownerRef.Name}</p>
-            <br/>
-            <p>Thank you,</p>
-            <p>Best regards,</p>
-            <p>Support Escalation Team</p>
-            <p><img src='{imageUrl}' alt='CRM Logo' style='width:200px; margin-bottom:10px;' /></p>
-        </body>
+       <body>
+<p>مع التحية والتقدير،</p>
+                    <p>نود إعلامكم بأن التذكرة التالية قد تجاوزت المدة المحددة في اتفاقية مستوى الخدمة (SLA):</p>
+                    <p>عنوان التذكرة:{teamName}</p>
+                    <p><a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a></p>
+                    <p>يرجى اتخاذ الإجراءات اللازمة حسب آلية التصعيد المعتمدة لضمان سرعة المعالجة.</p>
+                    <p>شكرًا لتعاونكم،</p>
+                    <p>مركز دعم المستثمرين لقطاع التعدين</p>
+         <p>With Regards and Appreciation</p>
+         <p>We would like to inform you that the following ticket has exceeded the time frame specified in the Service Level Agreement (SLA):</p>
+         <p> Responsible Team:  {teamName},<br/><br/></p>
+         <p><a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a></p>
+       
+         <pPlease take the necessary actions according to the approved escalation procedure to ensure prompt handling.</p>
+         <p><strong>Assigned Agent:</strong> {ownerRef.Name}</p>
+         <br/>
+         <p>Thank you for your cooperation,</p>
+         <p>Investor Support Center – Mining Sector</p>
+         <p><img src='{imageUrl}' alt='CRM Logo' style='width:200px; margin-bottom:10px;' /></p>
+    </body>
         </html>",
                 ["directioncode"] = true,
                 ["from"] = new EntityCollection(new[] { fromParty }),

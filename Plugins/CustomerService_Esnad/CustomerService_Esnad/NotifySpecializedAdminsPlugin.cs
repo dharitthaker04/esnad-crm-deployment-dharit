@@ -108,9 +108,13 @@ using Microsoft.Xrm.Sdk.Query;
                     <html>
                       <body>
                      
-                        <p>تم إنشاء تذكرة جديدة، {caseTitleHtml}، في حسابك.</p>
-                        <p>يرجى اعتماد التذكرة وفقاً لاتفاقية مستوى الخدمة</p>
+                       <p>تم اسناد تذكرة جديدة رقم {caseTitleHtml} في حسابكم.</p>
+                        <p>أولوية المعالجة : حرج</p>
                         <p>يرجى اعتماد التذكرة وفقًا لاتفاقية مستوى الخدمة (SLA) المعتمدة.</p>
+                        <p>A new ticket  {caseTitleHtml} has been assigned to your account.</p>
+                        <p>Ticket Priority Level : Urgent</p>
+                        <p>Kindly process the ticket in accordance with the approved Service Level Agreement (SLA).</p
+        
                         <p><img src='{imageUrl}' alt='CRM Logo' style='max-width: 200px;' /></p>
                       </body>
                     </html>";

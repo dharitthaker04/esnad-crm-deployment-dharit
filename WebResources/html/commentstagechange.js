@@ -93,9 +93,9 @@ function onLoadStageChangeEvent(executionContext) {
 }
 
 // Expose the name expected by the form
-window.syncBPFStatus_OnLoad = function(executionContext){
-  onLoadStageChangeEvent(executionContext);
-};
+//window.syncBPFStatus_OnLoad = function(executionContext){
+ // onLoadStageChangeEvent(executionContext);
+//};
 
 /** ============ STAGE -> STATUSCODE MAPPING ============ **/
 
