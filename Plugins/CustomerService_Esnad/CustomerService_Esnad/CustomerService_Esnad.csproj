@@ -162,6 +162,8 @@
     <Compile Include="Processing-Level3.cs" />
     <Compile Include="ResolveCasePlugin.cs" />
     <Compile Include="Processing-Level4.cs" />
+    <Compile Include="SmsOnCaseMilestones.cs" />
+    <Compile Include="SmsOnVisitorCreate.cs" />
     <Compile Include="TicketCloseEmailToCustomer.cs" />
   </ItemGroup>
   <ItemGroup>
