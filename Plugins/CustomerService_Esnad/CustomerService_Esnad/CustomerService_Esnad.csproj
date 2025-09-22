@@ -140,9 +140,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppendLicenseNumbersPlugin.cs" />
-    <Compile Include="CaseOnForwardedEmail.cs" />
+    <Compile Include="CST-SLALevel2.cs" />
     <Compile Include="ContactToCaseFieldMapperAsync.cs" />
-    <Compile Include="Email-to-case%28no-reply%29.cs" />
+    <Compile Include="CST-SLALevel1.cs" />
+    <Compile Include="CST-SLALevel3.cs" />
     <Compile Include="EmailtoCRMOfficerOnProcessingStage.cs" />
     <Compile Include="MoveBpfToApprovalStage.cs" />
     <Compile Include="MoveCaseBpfToProcessing.cs" />
@@ -156,11 +157,11 @@
     <Compile Include="SendNotificationtoCSTeamOnProcessingStage.cs" />
     <Compile Include="SendWarningtoCurrentResponsibleEmployee.cs" />
     <Compile Include="SetBPFActiveStage.cs" />
-    <Compile Include="SLALeval1.cs" />
-    <Compile Include="SLALevel2.cs" />
-    <Compile Include="SLALevel3.cs" />
+    <Compile Include="Processing-Leval1.cs" />
+    <Compile Include="Processing-Level2.cs" />
+    <Compile Include="Processing-Level3.cs" />
     <Compile Include="ResolveCasePlugin.cs" />
-    <Compile Include="SLALevel4.cs" />
+    <Compile Include="Processing-Level4.cs" />
     <Compile Include="TicketCloseEmailToCustomer.cs" />
   </ItemGroup>
   <ItemGroup>
