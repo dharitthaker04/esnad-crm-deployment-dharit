@@ -1,4 +1,4 @@
-﻿ using Microsoft.Xrm.Sdk;
+﻿using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using System;
 using System.Collections.Generic;
@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace CustomerService_Esnad
     {
-        public class CSTSLALevel3 : IPlugin
+        public class VerificationLevel3 : IPlugin
         {
             public void Execute(IServiceProvider serviceProvider)
             {
@@ -100,7 +100,7 @@ namespace CustomerService_Esnad
                 tracing.Trace($"Creating email for team: {teamName}");
 
                 string subject = $"[SLA Escalation Level 3- Customer Service Team-Sector Head] - Case Breach Alert";
-            string imageUrl = "https://feedback-dev.crm-esnad.com/Esnad-Logo.jpg";
+                string imageUrl = "https://feedback-dev.crm-esnad.com/Esnad-Logo.jpg";
 
                 var email = new Entity("email")
                 {

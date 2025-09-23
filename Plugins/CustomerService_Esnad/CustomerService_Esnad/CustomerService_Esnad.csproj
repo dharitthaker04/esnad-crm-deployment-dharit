@@ -140,10 +140,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppendLicenseNumbersPlugin.cs" />
-    <Compile Include="CST-SLALevel2.cs" />
+    <Compile Include="ApprovalAndFowardinglevel2.cs" />
     <Compile Include="ContactToCaseFieldMapperAsync.cs" />
-    <Compile Include="CST-SLALevel1.cs" />
-    <Compile Include="CST-SLALevel3.cs" />
+    <Compile Include="ApprovalAndFowardinglevel1.cs" />
+    <Compile Include="ApprovalAndFowardinglevel3.cs" />
     <Compile Include="EmailtoCRMOfficerOnProcessingStage.cs" />
     <Compile Include="MoveBpfToApprovalStage.cs" />
     <Compile Include="MoveCaseBpfToProcessing.cs" />
@@ -165,6 +165,9 @@
     <Compile Include="SmsOnCaseMilestones.cs" />
     <Compile Include="SmsOnVisitorCreate.cs" />
     <Compile Include="TicketCloseEmailToCustomer.cs" />
+    <Compile Include="VerificationLevel1.cs" />
+    <Compile Include="VerificationLevel2 .cs" />
+    <Compile Include="VerificationLevel3.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
