@@ -11,6 +11,7 @@ namespace CustomerService_Esnad
 {
     public class SendCaseReplyNotification : IPlugin
     {
+        //Email to CST team that Customer had been replied.
         public void Execute(IServiceProvider serviceProvider)
         {
             var context = (IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext));

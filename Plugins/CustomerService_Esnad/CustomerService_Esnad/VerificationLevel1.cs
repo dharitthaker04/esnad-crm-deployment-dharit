@@ -33,11 +33,12 @@ namespace CustomerService_Esnad
                     var teamId = teamRef.Id;
 
                     // Get case title
+
                     var caseEntity = service.Retrieve("incident", caseId, new ColumnSet("title"));
                     string caseTitle = caseEntity.GetAttributeValue<string>("title") ?? "Unknown";
-
+                    string Ticketnumber = caseEntity.GetAttributeValue<string>("ticketnumber") ?? " ";
                     // Get all users in the team
-                    var teamUsersQuery = new QueryExpression("teammembership")
+                var teamUsersQuery = new QueryExpression("teammembership")
                     {
                         ColumnSet = new ColumnSet("systemuserid"),
                         Criteria = new FilterExpression
@@ -93,28 +94,45 @@ namespace CustomerService_Esnad
 
                     // ✅ Include the image using <img src="">
                     string emailBody = $@"
-    <html>
-                <body>
-                    <p>مع التحية والتقدير،</p>
-                    <p>نود إعلامكم بأن التذكرة التالية قد تجاوزت المدة المحددة في اتفاقية مستوى الخدمة (SLA):</p>
-                   
-                    <p><a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a></p>
-                    <p>يرجى اتخاذ الإجراءات اللازمة حسب آلية التصعيد المعتمدة لضمان سرعة المعالجة.</p>
-                    <p>شكرًا لتعاونكم،</p>
-                    <p>مركز دعم المستثمرين لقطاع التعدين</p>
-                    <p>With Regards and Appreciation</p>
-                    <p>We would like to inform you that the following ticket has exceeded the time frame specified in the Service Level Agreement (SLA):</p>
-                   
-                    <p><a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a></p>
-                   
-                    <pPlease take the necessary actions according to the approved escalation procedure to ensure prompt handling.</p>
-                    
-                    <br/>
-                    <p>Thank you for your cooperation,</p>
-                    <p>Investor Support Center – Mining Sector</p>
-                    <p><img src='{imageUrl}' alt='CRM Logo' style='width:200px; margin-bottom:10px;' /></p>
-                </body>
-                </html>";
+                  <html>
+  <body style='font-family:Segoe UI, Tahoma, sans-serif; font-size:14px;'>
+
+    <!-- Arabic section -->
+    <div dir='rtl' style='text-align:right; margin-bottom:20px;'>
+      <p>مع التحية والتقدير،</p>
+      <p>نود إعلامكم بأن التذكرة التالية قد تجاوزت المدة المحددة في اتفاقية مستوى الخدمة (SLA):</p>
+      <p>عنوان التذكرة:
+        <a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a>
+      </p>
+      <p>المسؤول عنها: Customer Service Management Team</p>
+      <p>رقم التذكرة: {Ticketnumber}</p>
+      <p>يرجى اتخاذ الإجراءات اللازمة حسب آلية التصعيد المعتمدة لضمان سرعة المعالجة.</p>
+      <p>شكرًا لتعاونكم،</p>
+      <p>مركز دعم المستثمرين لقطاع التعدين</p>
+    </div>
+
+    <hr style='border:0; border-top:1px solid #ccc; margin:20px 0;' />
+
+    <!-- English section -->
+    <div dir='ltr' style='text-align:left; margin-top:20px;'>
+      <p>With Regards and Appreciation,</p>
+      <p>We would like to inform you that the following ticket has exceeded the time frame specified in the Service Level Agreement (SLA):</p>
+      <p>Ticket Title:
+        <a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a>
+      </p>
+      <p>Responsible Team: Customer Service Management Team</p>
+      <p>Ticket Number: {Ticketnumber}</p>
+      <p>Please take the necessary actions according to the approved escalation procedure to ensure prompt handling.</p>
+      <br/>
+      <p>Thank you for your cooperation,</p>
+      <p>Investor Support Center – Mining Sector</p>
+      <p>
+        <img src='{imageUrl}' alt='CRM Logo' style='width:200px; margin-bottom:10px;' />
+      </p>
+    </div>
+
+  </body>
+</html>";
 
                     var email = new Entity("email")
                     {

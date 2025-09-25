@@ -8,6 +8,7 @@ namespace CustomerService_Esnad
 {
     public class EmailtoCRMOfficerOnProcessingStage : IPlugin
     {
+        //send email to CRM officer of CST while stage=Processing
         public void Execute(IServiceProvider serviceProvider)
         {
             var context = (IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext));
@@ -126,7 +127,7 @@ namespace CustomerService_Esnad
 
                 var email = new Entity("email")
                 {
-                    ["subject"] = $"Dear Customer service team {caseTitle}",
+                    ["subject"] = $"Dear Customer service CRM Officer {caseTitle}",
                     ["description"] = emailBody,
                     ["directioncode"] = true,
                     ["from"] = new EntityCollection(new[] { fromParty }),

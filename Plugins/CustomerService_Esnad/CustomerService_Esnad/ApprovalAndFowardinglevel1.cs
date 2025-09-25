@@ -1,13 +1,9 @@
 ﻿using Microsoft.Crm.Sdk.Messages;
-using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Query;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Net.WebRequestMethods;
-using System.Activities.Expressions;
 
 namespace CustomerService_Esnad
 {
@@ -15,6 +11,7 @@ namespace CustomerService_Esnad
     {
         public void Execute(IServiceProvider serviceProvider)
         {
+            // Context & services
             var context = (IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext));
             var serviceFactory = (IOrganizationServiceFactory)serviceProvider.GetService(typeof(IOrganizationServiceFactory));
             var service = serviceFactory.CreateOrganizationService(context.UserId);
@@ -24,37 +21,44 @@ namespace CustomerService_Esnad
 
             try
             {
+                // Validate input parameters
                 if (!context.InputParameters.Contains("CaseId") || !(context.InputParameters["CaseId"] is EntityReference caseRef))
                     throw new InvalidPluginExecutionException("Missing or invalid 'CaseId' input parameter.");
 
                 if (!context.InputParameters.Contains("TeamId") || !(context.InputParameters["TeamId"] is EntityReference teamRef))
                     throw new InvalidPluginExecutionException("Missing or invalid 'TeamId' input parameter.");
 
-                var caseId = caseRef.Id;
-                var teamId = teamRef.Id;
+                Guid caseId = caseRef.Id;
+                Guid teamId = teamRef.Id;
 
-                // Get case title
-                var caseEntity = service.Retrieve("incident", caseId, new ColumnSet("title"));
-                string caseTitle = caseEntity.GetAttributeValue<string>("title") ?? "Unknown";
+                tracing.Trace($"CaseId={caseId}, TeamId={teamId}");
+
+                // Get case details
+                var caseEntity = service.Retrieve("incident", caseId, new ColumnSet("title", "ticketnumber", "ownerid"));
+                string caseTitle = caseEntity.GetAttributeValue<string>("title") ?? "Unknown Case";
+                string ticketNumber = caseEntity.GetAttributeValue<string>("ticketnumber") ?? "Unknown";
+
+                tracing.Trace($"Case title='{caseTitle}', TicketNumber='{ticketNumber}'");
 
                 // Get all users in the team
-                var teamUsersQuery = new QueryExpression("teammembership")
+                var teamMembersQuery = new QueryExpression("teammembership")
                 {
                     ColumnSet = new ColumnSet("systemuserid"),
                     Criteria = new FilterExpression
                     {
-                        Conditions = {
-                            new ConditionExpression("teamid", ConditionOperator.Equal, teamId)
-                        }
+                        Conditions = { new ConditionExpression("teamid", ConditionOperator.Equal, teamId) }
                     }
                 };
 
-                var userIds = service.RetrieveMultiple(teamUsersQuery)
-                    .Entities.Select(e => e.GetAttributeValue<Guid>("systemuserid")).Distinct().ToList();
+                var userIds = service.RetrieveMultiple(teamMembersQuery)
+                                     .Entities
+                                     .Select(e => e.GetAttributeValue<Guid>("systemuserid"))
+                                     .Distinct()
+                                     .ToList();
 
                 if (!userIds.Any())
                 {
-                    tracing.Trace("❌ No users found in the team.");
+                    tracing.Trace("⚠️ No users found in the team. Email will not be sent.");
                     return;
                 }
 
@@ -64,10 +68,10 @@ namespace CustomerService_Esnad
                     ["partyid"] = new EntityReference("systemuser", uid)
                 }).ToList();
 
-                // Get CRM Admin user
+                // Get CRM Admin user (fallback sender)
                 var crmAdmin = service.RetrieveMultiple(new QueryExpression("systemuser")
                 {
-                    ColumnSet = new ColumnSet("systemuserid", "internalemailaddress"),
+                    ColumnSet = new ColumnSet("systemuserid"),
                     Criteria = new FilterExpression
                     {
                         Conditions =
@@ -78,67 +82,83 @@ namespace CustomerService_Esnad
                     }
                 }).Entities.FirstOrDefault();
 
-                if (crmAdmin == null || !crmAdmin.Contains("internalemailaddress"))
-                    throw new InvalidPluginExecutionException("CRM Admin user not found or missing email.");
+                Guid fromUserId = crmAdmin != null ? crmAdmin.Id : context.InitiatingUserId;
 
                 var fromParty = new Entity("activityparty")
                 {
-                    ["partyid"] = new EntityReference("systemuser", crmAdmin.Id)
+                    ["partyid"] = new EntityReference("systemuser", fromUserId)
                 };
-                EntityReference ownerRef = caseEntity.GetAttributeValue<EntityReference>("ownerid");
-                // Build email
-                string imageUrl = "https://feedback-dev.crm-esnad.com/Esnad-Logo.jpg"; // Use HTTPS if possible
-                string orgUrl = GetOrgURL1(service, tracing);
+
+                // Build URLs
+                string imageUrl = "https://feedback-dev.crm-esnad.com/Esnad-Logo.jpg"; // Adjust to real URL
+                string orgUrl = GetOrgURL(service, tracing);
                 string caseUrl = $"{orgUrl}{caseId}";
-                string caseTitleHtml = $"<a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a>";
 
-                // ✅ Include the image using <img src="">
+                // Build bilingual email body
                 string emailBody = $@"
-    <html>
-                <body>
-                    <p>مع التحية والتقدير،</p>
-                    <p>نود إعلامكم بأن التذكرة التالية قد تجاوزت المدة المحددة في اتفاقية مستوى الخدمة (SLA):</p>
-                   
-                    <p><a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a></p>
-                    <p>يرجى اتخاذ الإجراءات اللازمة حسب آلية التصعيد المعتمدة لضمان سرعة المعالجة.</p>
-                    <p>شكرًا لتعاونكم،</p>
-                    <p>مركز دعم المستثمرين لقطاع التعدين</p>
-                    <p>With Regards and Appreciation</p>
-                    <p>We would like to inform you that the following ticket has exceeded the time frame specified in the Service Level Agreement (SLA):</p>
-                   
-                    <p><a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a></p>
-                   
-                    <pPlease take the necessary actions according to the approved escalation procedure to ensure prompt handling.</p>
-                    
-                    <br/>
-                    <p>Thank you for your cooperation,</p>
-                    <p>Investor Support Center – Mining Sector</p>
-                    <p><img src='{imageUrl}' alt='CRM Logo' style='width:200px; margin-bottom:10px;' /></p>
-                </body>
-                </html>";
+<html>
+  <body style='font-family:Segoe UI, Tahoma, sans-serif; font-size:14px;'>
 
+    <!-- Arabic section -->
+    <div dir='rtl' style='text-align:right; margin-bottom:20px;'>
+      <p>مع التحية والتقدير،</p>
+      <p>نود إعلامكم بأن التذكرة التالية قد تجاوزت المدة المحددة في اتفاقية مستوى الخدمة (SLA):</p>
+      <p>عنوان التذكرة:
+        <a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a>
+      </p>
+      <p>المسؤول عنها: Customer Service Management Team</p>
+      <p>رقم التذكرة: {ticketNumber}</p>
+      <p>يرجى اتخاذ الإجراءات اللازمة حسب آلية التصعيد المعتمدة لضمان سرعة المعالجة.</p>
+      <p>شكرًا لتعاونكم،</p>
+      <p>مركز دعم المستثمرين لقطاع التعدين</p>
+    </div>
+
+    <hr style='border:0; border-top:1px solid #ccc; margin:20px 0;' />
+
+    <!-- English section -->
+    <div dir='ltr' style='text-align:left; margin-top:20px;'>
+      <p>With Regards and Appreciation,</p>
+      <p>We would like to inform you that the following ticket has exceeded the time frame specified in the Service Level Agreement (SLA):</p>
+      <p>Ticket Title:
+        <a href='{caseUrl}' style='color:#0078d4; font-weight:bold;'>{caseTitle}</a>
+      </p>
+      <p>Responsible Team: Customer Service Management Team</p>
+      <p>Ticket Number: {ticketNumber}</p>
+      <p>Please take the necessary actions according to the approved escalation procedure to ensure prompt handling.</p>
+      <br/>
+      <p>Thank you for your cooperation,</p>
+      <p>Investor Support Center – Mining Sector</p>
+      <p>
+        <img src='{imageUrl}' alt='CRM Logo' style='width:200px; margin-bottom:10px;' />
+      </p>
+    </div>
+
+  </body>
+</html>";
+
+                // Create email
                 var email = new Entity("email")
                 {
-                    ["subject"] = $"[SLA Escalation Level 1- Customer Service Team] - Case Breach Alert",
+                    ["subject"] = "[SLA Escalation Level 1 - Customer Service Team] - Case Breach Alert",
                     ["description"] = emailBody,
                     ["directioncode"] = true,
                     ["from"] = new EntityCollection(new[] { fromParty }),
                     ["to"] = new EntityCollection(toParties),
-                    ["regardingobjectid"] = new EntityReference("incident", caseId),
-                    ["statuscode"] = new OptionSetValue(1) // Draft
+                    ["regardingobjectid"] = new EntityReference("incident", caseId)
                 };
 
                 Guid emailId = service.Create(email);
                 tracing.Trace("✅ Email created. ID: " + emailId);
 
+                // Send email
                 var sendRequest = new SendEmailRequest
                 {
                     EmailId = emailId,
                     IssueSend = true,
                     TrackingToken = ""
                 };
-
                 service.Execute(sendRequest);
+
                 tracing.Trace("✅ Email sent via SendEmailRequest.");
 
                 // Update case
@@ -147,29 +167,27 @@ namespace CustomerService_Esnad
                     ["new_copycaseguid"] = caseId.ToString()
                 };
                 service.Update(updateCase);
-                tracing.Trace("✅ Case updated with new_copycaseguid.");
 
+                tracing.Trace("✅ Case updated with new_copycaseguid.");
             }
             catch (Exception ex)
             {
                 tracing.Trace("❌ Exception: " + ex.ToString());
-                throw new InvalidPluginExecutionException("Error in SendCaseReplyNotificationPlugin.", ex);
+                throw new InvalidPluginExecutionException("Error in ApprovalAndForwardingLevel1 plugin.", ex);
             }
 
             tracing.Trace("🏁 Plugin execution completed.");
         }
 
-        private string GetOrgURL1(IOrganizationService service, ITracingService tracing)
+        private string GetOrgURL(IOrganizationService service, ITracingService tracing)
         {
+            // Reads the Org URL from custom environment variable entity
             var query = new QueryExpression("new_environmentvariable")
             {
                 ColumnSet = new ColumnSet("new_value"),
                 Criteria = new FilterExpression
                 {
-                    Conditions =
-                    {
-                        new ConditionExpression("new_name", ConditionOperator.Equal, "OrgURL")
-                    }
+                    Conditions = { new ConditionExpression("new_name", ConditionOperator.Equal, "OrgURL") }
                 }
             };
 
