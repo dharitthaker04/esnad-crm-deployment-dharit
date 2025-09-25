@@ -10,7 +10,7 @@ namespace CustomerService_Esnad
 {
     public class SendEmailToCustomerServiceTeam : IPlugin
     {
-
+        //Plugin to notify CST that ticket created and assign to you.
       
         public void Execute(IServiceProvider serviceProvider)
         {

@@ -6,6 +6,7 @@ using Microsoft.Xrm.Sdk.Query;
 
  public class NotifySpecializedAdminsPlugin : IPlugin
 {
+    //use for other team assignment notification
         public void Execute(IServiceProvider serviceProvider)
         {
             var context = (IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext));
@@ -18,10 +19,14 @@ using Microsoft.Xrm.Sdk.Query;
             try
             {
                 // Input validation
-                if (!context.InputParameters.Contains("CaseId") || !(context.InputParameters["CaseId"] is EntityReference caseRef))
+                EntityReference caseRef;
+                if (context.InputParameters.Contains("CaseId") && context.InputParameters["CaseId"] is EntityReference)
                 {
-                    tracing.Trace("CaseId parameter missing or invalid.");
-                    return;
+                    caseRef = (EntityReference)context.InputParameters["CaseId"];
+                }
+                else
+                {
+                    caseRef = new EntityReference(context.PrimaryEntityName, context.PrimaryEntityId);
                 }
 
                 // Retrieve Case
@@ -146,7 +151,7 @@ using Microsoft.Xrm.Sdk.Query;
             catch (Exception ex)
             {
                 tracing.Trace("NotifySpecializedAdminsPlugin error: " + ex.ToString());
-                throw new InvalidPluginExecutionException("Failed to notify Specialized Admin Staff.", ex);
+               // throw new InvalidPluginExecutionException("Failed to notify Specialized Admin Staff.", ex);
             }
         }
 

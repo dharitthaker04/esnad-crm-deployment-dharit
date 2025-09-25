@@ -8,6 +8,7 @@ namespace CustomerService_Esnad
 {
     public class SendEmailNotificationToCRMOfficer : IPlugin
     {
+        //send email to CRM officer of CST while Customer send reply on Return to Customer stage
         public void Execute(IServiceProvider serviceProvider)
         {
             var context = (IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext));
