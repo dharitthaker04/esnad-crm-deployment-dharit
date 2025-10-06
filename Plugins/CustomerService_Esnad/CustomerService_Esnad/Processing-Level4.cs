@@ -125,7 +125,7 @@ namespace CustomerService_Esnad
             }
 
             // Create the email subject and body
-            string subject = $"[SLA Escalation Level 4] Case Breach Alert - {caseTitle}";
+            string subject = $"[Processing SLA Escalation Level 3] Case Breach Alert - {caseTitle}";
             string imageUrl = "https://feedback-dev.crm-esnad.com/Esnad-Logo.jpg";
 
             var email = new Entity("email")
