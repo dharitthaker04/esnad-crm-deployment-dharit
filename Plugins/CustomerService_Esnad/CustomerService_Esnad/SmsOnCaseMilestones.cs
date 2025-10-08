@@ -12,14 +12,14 @@ namespace Taadeen.Crm.Plugins
         // Static values for your gateway
         private const string BaseUrl = "https://api.oursms.com/api-a/msgs";
         private const string Username = "Taadeen2.0";
-        private const string Token = "7sgOnsFhAuYdNgg5a3R4"; 
+        private const string Token = "7sgOnsFhAuYdNgg5a3R4";
         private const string Sender = "Taadeen";
 
         // StatusCode values
         private const int STATUS_TICKET_CREATION = 100000000;
         private const int STATUS_RETURN_TO_CUSTOMER = 100000001;
         private const int STATUS_SOLUTION_VERIFICATION = 100000002;
-        private const int STATUS_TICKET_CLOSURE = 100000003;
+        private const int STATUS_TICKET_CLOSURE = 100000008;
 
         public SmsOnCaseMilestones(string unsecureConfig, string secureConfig) { }
 
@@ -93,6 +93,35 @@ namespace Taadeen.Crm.Plugins
             }
         }
 
+        // 🔹 Helper to fetch values from your custom environmentvariable entity
+        private string GetConfigValue(IOrganizationService service, string name, ITracingService tracing)
+        {
+            tracing.Trace($"Fetching config value for: {name}");
+
+            var query = new QueryExpression("new_environmentvariable")
+            {
+                ColumnSet = new ColumnSet("new_value"),
+                Criteria =
+                {
+                    Conditions =
+                    {
+                        new ConditionExpression("new_name", ConditionOperator.Equal, name)
+                    }
+                }
+            };
+
+            var result = service.RetrieveMultiple(query).Entities.FirstOrDefault();
+            if (result != null && result.Contains("new_value"))
+            {
+                var value = result.GetAttributeValue<string>("new_value");
+                tracing.Trace($"✅ Config {name} resolved to: {value}");
+                return value;
+            }
+
+            tracing.Trace($"❌ Config {name} not found.");
+            throw new InvalidPluginExecutionException($"Config {name} missing in new_environmentvariable.");
+        }
+
         private void SendForCreate(Entity incident, ITracingService tracing, IOrganizationService service)
         {
             tracing.Trace("SendForCreate called");
@@ -130,7 +159,11 @@ namespace Taadeen.Crm.Plugins
             else if (newStatus == STATUS_SOLUTION_VERIFICATION)
                 body = SmsTemplates.ForSolutionVerification(ticket);
             else if (newStatus == STATUS_TICKET_CLOSURE)
-                body = SmsTemplates.ForTicketClosure(ticket);
+            {
+                var baseUrl = GetConfigValue(service, "FeedbackBaseUrl", tracing)
+                              ?? "https://feedback.crm-esnad.com"; // fallback if not found
+                body = SmsTemplates.ForTicketClosure(ticket, baseUrl);
+            }
 
             if (!string.IsNullOrWhiteSpace(body))
             {
@@ -248,9 +281,11 @@ namespace Taadeen.Crm.Plugins
             public static string ForSolutionVerification(string ticket) =>
                 $"{RLE}عزيزنا المستثمر،\r\nتم معالجة التذكرة رقم {RLM}{ticket}. وفي حال استمرار المشكلة، يرجى التكرم بالرد على البريد الإلكتروني المرسل. علمًا بأن التذكرة ستغلق تلقائيًا خلال خمسة أيام عمل في حال عدم الرد.{PDF}";
 
-            public static string ForTicketClosure(string ticket) =>
-                $"{RLE}عزيزنا المستثمر,\r\nتم اغلاق التذكرة رقم {RLM}{ticket} وحرصاً منا لرفع مستوى الجودة يسعدنا تقييمكم للخدمة المقدمة:\r\nhttps://feedback-dev.crm-esnad.com/?ticketNumber={ticket}{PDF}";
+            // 🔹 Closure now uses environment variable
+            public static string ForTicketClosure(string ticket, string baseUrl) =>
+                $"\u202Bعزيزنا المستثمر,\r\n" +
+                $"تم اغلاق التذكرة رقم \u200F{ticket} وحرصاً منا لرفع مستوى الجودة يسعدنا تقييمكم للخدمة المقدمة:\r\n" +
+                $"\u202C{baseUrl}?ticketNumber={ticket}";
         }
-
     }
 }
