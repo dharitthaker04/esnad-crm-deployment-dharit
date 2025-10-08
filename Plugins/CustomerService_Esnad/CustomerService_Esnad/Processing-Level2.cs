@@ -110,7 +110,7 @@ namespace CustomerService_Esnad
 
             tracing.Trace($"Creating email for team: {teamName}");
 
-            string subject = $"[SLA Escalation Level 2-Department Manager] {teamName} - Case Breach Alert";
+            string subject = $"[Processing SLA Escalation Level 1-Department Manager] {teamName} - Case Breach Alert";
             string imageUrl = "https://feedback-dev.crm-esnad.com/Esnad-Logo.jpg";
 
             var email = new Entity("email")
