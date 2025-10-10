@@ -165,6 +165,7 @@
     <Compile Include="SmsOnCaseMilestones.cs" />
     <Compile Include="SmsOnVisitorCreate.cs" />
     <Compile Include="TicketCloseEmailToCustomer.cs" />
+    <Compile Include="TrackStageDuration.cs" />
     <Compile Include="VerificationLevel1.cs" />
     <Compile Include="VerificationLevel2 .cs" />
     <Compile Include="VerificationLevel3.cs" />
