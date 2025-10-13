@@ -78,17 +78,29 @@ namespace CustomerService_Esnad
                     if (lastStart.HasValue)
                     {
                         DateTime endTime = DateTime.UtcNow;
-                        double duration = (endTime - lastStart.Value).TotalHours;
+                        TimeSpan stageDuration = endTime - lastStart.Value;
+
+                        // 🕒 Convert to custom decimal format (1m = 0.01h, 30m = 0.30h)
+                        int hours = (int)stageDuration.TotalHours;
+                        int minutes = stageDuration.Minutes;
+                        double durationHours = Math.Round(hours + (minutes / 100.0), 2);
+
+                        // 🕒 Create readable text like "2h 35m"
+                        string formattedDuration = $"{hours}h {minutes}m";
 
                         var updateStage = new Entity("new_ticketstagehistory", lastStage.Id)
                         {
                             ["new_endtime"] = endTime,
-                            ["new_durationhours"] = Math.Round(duration, 2)
+                            ["new_durationhours"] = durationHours
+                            //["new_durationformatted"] = formattedDuration
                         };
+
                         service.Update(updateStage);
 
-                        tracing.Trace($"✅ Closed '{lastStageName}' – {duration:F2} h");
+                        tracing.Trace($"✅ Closed '{lastStageName}' – Duration: {formattedDuration} ({durationHours} hours)");
                     }
+
+
                 }
                 else
                 {
